@@ -55,30 +55,18 @@ bool within(Point area, src, dst) {
 
 /// horizontal allows for up and down movement
 bool horizontal(Point src, dst) {
-  if (src.y == src.y) {
-    if (src.x != dst.x) {
-      return true;
-    }
-  }
-
-  return false;
+  return src.y == dst.y && src.x != dst.x;
 }
 
 /// vertical allows for left and right movement
 bool vertical(Point src, dst) {
-  if (src.y == src.y) {
-    if (src.x != dst.x) {
-      return true;
-    }
-  }
-
-  return false;
+  return src.x == dst.x && src.y != dst.y;
 }
 
 /// diagonal allows for movement of: [Up Left, Up Right, Down Left, Down Right]
 bool diagonal(Point src, dst) {
   final int i = (src.x - dst.x).abs();
-  final int j = (src.x - dst.x).abs();
+  final int j = (src.y - dst.y).abs();
 
   if (i == j) {
     return true;

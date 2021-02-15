@@ -1,5 +1,5 @@
-name: clie
-description: A new Flutter project.
+name: chess_client
+description: A chess client written in flutter
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
@@ -34,6 +34,7 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  test: any
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
