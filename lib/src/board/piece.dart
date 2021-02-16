@@ -3,7 +3,7 @@ import "package:chess_client/src/board/rules.dart";
 enum Type { empty, pawnf, pawnb, bishop, knight, rook, queen, king }
 
 final Map<Type, String> typeMap = {
-  Type.empty: "e",
+  Type.empty: "",
   Type.pawnf: "p",
   Type.pawnb: "p",
   Type.bishop: "b",
@@ -11,6 +11,17 @@ final Map<Type, String> typeMap = {
   Type.rook: "r",
   Type.queen: "q",
   Type.king: "k",
+};
+
+final Map<Type, String> filenames = {
+  Type.empty: "",
+  Type.pawnf: "pawn.svg",
+  Type.pawnb: "pawn.svg",
+  Type.bishop: "bishop.svg",
+  Type.knight: "knight.svg",
+  Type.rook: "rook.svg",
+  Type.queen: "queen.svg",
+  Type.king: "king.svg",
 };
 
 extension TypeToString on Type {
@@ -28,6 +39,12 @@ class Piece {
   Type t = Type.empty;
 
   Piece(this.pos, this.t, this.num);
+
+  String toString() {
+    return this.t.toString().split('.').last;
+  }
+
+  String svgFilename() {}
 
   bool canGo(Point dst) {
     // out of bounds

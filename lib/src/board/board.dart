@@ -1,5 +1,6 @@
 import "package:chess_client/src/board/rules.dart";
 import "package:chess_client/src/board/piece.dart";
+import 'package:flutter/material.dart';
 
 class Board {
   var alt1 = List<Type>.filled(8, Type.pawnb);
@@ -14,23 +15,38 @@ class Board {
     Type.rook,
   ];
 
-  var _data = List<List<Piece>>.filled(8, List<Piece>.filled(8, null));
+  static const int max = 8;
+  var _data = List<List<Piece>>.empty(growable: true);
 
   Board() {
-    for (int i = 0; i < 2; i++) {
+    for (var i = 0; i < max; i++) {
+      this._data.add(List<Piece>.filled(max, null));
+    }
+
+    for (var i = 0; i < 2; i++) {
       int x = i;
       int num = 1;
       if (i == 1) {
-        alt1 = alt2;
+        alt1 = [];
+        alt1.addAll(alt2);
+
         alt2 = List<Type>.filled(8, Type.pawnf);
 
         x += 5;
-        num = 2;
+        num++;
       }
 
-      for (int y = 0; y < 8; y++) {
-        _data[x][y] = Piece(Point(x, y), alt1[y], num);
-        _data[x + 1][y] = Piece(Point(x, y), alt2[y], num);
+      for (var y = 0; y < 8; y++) {
+        this._data[x][y] = Piece(
+          Point(x, y),
+          alt2[y],
+          num,
+        );
+        this._data[x + 1][y] = Piece(
+          Point(x + 1, y),
+          alt1[y],
+          num,
+        );
       }
     }
   }
@@ -38,16 +54,19 @@ class Board {
   String toString() {
     String str = "";
 
-    for (var x = 0; x < _data.length; x++) {
+    this._data.asMap().forEach((x, l) {
       if (x != 0) {
         str += "\n";
       }
 
-      var v = _data[x];
-      for (var y = 0; y < v.length; y++) {
-        str += _data[x][y].t.toShortString() + " ";
-      }
-    }
+      l.forEach((p) {
+        if (p != null) {
+          str += p.t.toShortString() + " ";
+        } else {
+          str += " ";
+        }
+      });
+    });
 
     return str;
   }
@@ -57,7 +76,7 @@ class Board {
       if (p.t == Type.empty) {
         this._data[p.pos.x][p.pos.y] = null;
       } else {
-        this._data[p.pos.x][p.pos.x] = p;
+        this._data[p.pos.x][p.pos.y] = p;
       }
     }
   }
@@ -70,7 +89,13 @@ class Board {
     bool ok = p.canGo(dst);
 
     if (p.t == Type.pawnf || p.t == Type.pawnb) {
-      final int x = p.pos.x + 1;
+      int x = p.pos.x;
+      if (p.t == Type.pawnf) {
+        x--;
+      } else {
+        x++;
+      }
+
       final int y = p.pos.y;
 
       if (!ok) {
@@ -87,11 +112,41 @@ class Board {
       }
     }
 
-    p.pos = dst;
     if (ok) {
+      this._data[dst.x][dst.y] = null;
+
+      p.pos = dst;
       this.set(p);
     }
 
     return ok;
   }
+
+  /*
+  static final Color pri = Colors.white;
+  static final Color sec = Colors.grey[200];
+
+  List<Row> _rows = List<Row>.filled(8, Row());
+
+  @override
+  Widget build(BuildContext context, State state) {
+    //Container c = Container();
+    for (var x = 0; x < Board.max; x++) {
+      for (var y = 0; y < Board.max; y++) {
+        Color bg = Board.pri;
+        if ((x % 1) == 0) {
+          bg = Board.sec;
+        }
+
+        if ((y % 1) == 0) {
+          if (bg == Board.pri) {
+            bg = Board.sec;
+          } else if (bg == Board.sec) {
+            bg = Board.pri;
+          }
+        }
+      }
+    }
+  }
+  */
 }
