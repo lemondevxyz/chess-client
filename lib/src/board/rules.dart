@@ -12,12 +12,12 @@ Point swap(Point p) {
 }
 
 /// equal checks if two points are the same
-bool equal(Point src, dst) {
+bool equal(Point src, Point dst) {
   return src.x == dst.x && src.y == dst.y;
 }
 
 /// forward checks if dst is forward of src. if it's equal then it returns false
-bool forward(Point src, dst) {
+bool forward(Point src, Point dst) {
   if (equal(src, dst)) {
     return false;
   }
@@ -33,7 +33,7 @@ bool forward(Point src, dst) {
 }
 
 /// backward checks if dst is backward of src. if it's equal then it returns false
-bool backward(Point src, dst) {
+bool backward(Point src, Point dst) {
   if (equal(src, dst)) {
     return false;
   }
@@ -42,7 +42,7 @@ bool backward(Point src, dst) {
 }
 
 /// within checks if (src-dst) is inside of area
-bool within(Point area, src, dst) {
+bool within(Point area, Point src, Point dst) {
   final int i = (src.x - dst.x).abs();
   final int j = (src.y - dst.y).abs();
 
@@ -54,17 +54,17 @@ bool within(Point area, src, dst) {
 }
 
 /// horizontal allows for up and down movement
-bool horizontal(Point src, dst) {
+bool horizontal(Point src, Point dst) {
   return src.y == dst.y && src.x != dst.x;
 }
 
 /// vertical allows for left and right movement
-bool vertical(Point src, dst) {
+bool vertical(Point src, Point dst) {
   return src.x == dst.x && src.y != dst.y;
 }
 
 /// diagonal allows for movement of: [Up Left, Up Right, Down Left, Down Right]
-bool diagonal(Point src, dst) {
+bool diagonal(Point src, Point dst) {
   final int i = (src.x - dst.x).abs();
   final int j = (src.y - dst.y).abs();
 
@@ -76,11 +76,7 @@ bool diagonal(Point src, dst) {
 }
 
 /// square helper function that allows for movement of: [Up, Left, Down, Right] - [Up Left, Up Right, Down Left, Down Right]
-bool square(Point src, dst) {
-  if (equal(src, dst)) {
-    return false;
-  }
-
+bool square(Point src, Point dst) {
   final Point corner = Point(1, 1);
   final Point area = Point(1, 0);
 
