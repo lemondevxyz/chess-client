@@ -41,7 +41,19 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
-
+  assets:
+  - assets/light/pawn.png
+  - assets/light/rook.png
+  - assets/light/bishop.png
+  - assets/light/knight.png
+  - assets/light/queen.png
+  - assets/light/king.png
+  - assets/dark/pawn.png
+  - assets/dark/rook.png
+  - assets/dark/bishop.png
+  - assets/dark/knight.png
+  - assets/dark/queen.png
+  - assets/dark/king.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

@@ -1,9 +1,134 @@
 // implements rules.go
+extension ListPoint on List<Point> {
+  // clean removes any out of bounds points
+  void clean() {
+    final bad = <int>[];
+
+    this.asMap().forEach((i, p) {
+      if (p.outOfBounds()) {
+        bad.add(i);
+      }
+    });
+
+    bad.reversed.toList().forEach((i) {
+      this.remove(i);
+    });
+  }
+}
 
 class Point {
   final int x, y;
 
   const Point(this.x, this.y);
+
+  bool outOfBounds() {
+    return (7 > this.x || 0 > this.x || 7 > this.y || 0 > this.y);
+  }
+
+  List<Point> horizontal() {
+    final ps = <Point>[];
+
+    for (var i = 7; i >= 0; i--) {
+      ps.add(Point(i, this.y));
+    }
+
+    return ps;
+  }
+
+  List<Point> vertical() {
+    final ps = <Point>[];
+
+    for (var i = 7; i >= 0; i--) {
+      ps.add(Point(this.x, i));
+    }
+
+    return ps;
+  }
+
+  List<Point> square() {
+    final ps = <Point>[
+      Point(this.x + 1, this.y + 1),
+      Point(this.x + 1, this.y),
+      Point(this.x + 1, this.y - 1),
+      Point(this.x, this.y + 1),
+      Point(this.x, this.y - 1),
+      Point(this.x - 1, this.y + 1),
+      Point(this.x - 1, this.y),
+      Point(this.x - 1, this.y - 1),
+    ];
+
+    ps.clean();
+
+    return ps;
+  }
+
+  // possible diagonal moves
+  List<Point> diagonal() {
+    final ps = <Point>[];
+
+    int x = this.x;
+    int y = this.y;
+
+    final int orix = x;
+    final int oriy = y;
+
+    int diff = (8 - orix);
+    if (orix > oriy) {
+      diff = 8 - orix;
+    } else if (orix < oriy) {
+      diff = 8 - oriy;
+    } else if (orix == oriy) {
+      diff = 8 - orix;
+    }
+
+    x += diff;
+    y += diff;
+
+    for (var i = 0; i < 8; i++) {
+      x--;
+      y--;
+
+      if (x == -1 || y == -1 || x == 8 || y == 8) {
+        break;
+      }
+
+      ps.add(Point(x, y));
+    }
+
+    x = 0;
+    y = oriy + diff;
+
+    for (var i = 0; i < 8; i++) {
+      x--;
+      y++;
+
+      if (x == -1 || y == -1 || x == 8 || y == 8) {
+        break;
+      }
+
+      ps.add(Point(x, y));
+    }
+
+    return ps;
+  }
+
+  // knight possible moves
+  List<Point> knight() {
+    final ps = <Point>[
+      Point(x + 2, x + 1),
+      Point(x + 2, x - 1),
+      Point(x - 2, x + 1),
+      Point(x - 2, x - 1),
+      Point(x + 1, x + 1),
+      Point(x + 1, x - 1),
+      Point(x - 1, x + 1),
+      Point(x - 1, x - 1),
+    ];
+
+    ps.clean();
+
+    return ps;
+  }
 }
 
 /// swap returns a point with y, x instead of x, y

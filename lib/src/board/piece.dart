@@ -15,13 +15,13 @@ final Map<Type, String> typeMap = {
 
 final Map<Type, String> filenames = {
   Type.empty: "",
-  Type.pawnf: "pawn.svg",
-  Type.pawnb: "pawn.svg",
-  Type.bishop: "bishop.svg",
-  Type.knight: "knight.svg",
-  Type.rook: "rook.svg",
-  Type.queen: "queen.svg",
-  Type.king: "king.svg",
+  Type.pawnf: "pawn.png",
+  Type.pawnb: "pawn.png",
+  Type.bishop: "bishop.png",
+  Type.knight: "knight.png",
+  Type.rook: "rook.png",
+  Type.queen: "queen.png",
+  Type.king: "king.png",
 };
 
 extension TypeToString on Type {
@@ -43,8 +43,6 @@ class Piece {
   String toString() {
     return this.t.toString().split('.').last;
   }
-
-  String svgFilename() {}
 
   bool canGo(Point dst) {
     // out of bounds
@@ -110,5 +108,62 @@ class Piece {
     }
 
     return false;
+  }
+
+  List<Point> possib() {
+    final ps = <Point>[];
+
+    int x = this.pos.x;
+    int y = this.pos.y;
+
+    switch (this.t) {
+      case Type.pawnb:
+        {
+          ps.add(Point(x + 1, y));
+          if (this.pos.x == 1) {
+            ps.add(Point(x + 2, y));
+          }
+
+          // stupid case-block-not-terminated
+          // i hate you so much
+          return ps;
+        }
+      case Type.pawnf:
+        {
+          ps.add(Point(x - 1, y));
+          if (this.pos.x == 6) {
+            ps.add(Point(x - 2, y));
+          }
+
+          // stupid case-block-not-terminated
+          // i hate you so much
+          return ps;
+        }
+      case Type.bishop:
+        {
+          return this.pos.diagonal();
+        }
+      case Type.knight:
+        // 2,1 or -2, 1 or 2, -1 or -2, -1
+        // 1,2 or -1, 2 or 1, -2 or -2, -1
+        {
+          return this.pos.knight();
+        }
+      case Type.rook:
+        {
+          return this.pos.horizontal() + this.pos.vertical();
+        }
+      case Type.queen:
+        {
+          return this.pos.diagonal() +
+              this.pos.horizontal() +
+              this.pos.vertical() +
+              this.pos.square();
+        }
+      case Type.king:
+        return this.pos.square();
+    }
+
+    return ps;
   }
 }
