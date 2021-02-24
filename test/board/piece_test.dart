@@ -1,34 +1,8 @@
-import "package:chess_client/src/board/rules.dart";
+import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
 import "package:test/test.dart";
 
 void main() {
-  List<Point> possible(List<Point> ps) {
-    var ret = List<Point>.empty(growable: true);
-    for (var x = 0; x < 8; x++) {
-      for (var y = 0; y < 8; y++) {
-        ret.add(Point(x, y));
-      }
-    }
-
-    //print("${ret.length} ${ps.length}");
-    List<int> rm = [];
-
-    ret.asMap().forEach((index, p) {
-      ps.asMap().forEach((_, o) {
-        if (equal(p, o)) {
-          rm.add(index);
-        }
-      });
-    });
-
-    rm.reversed.toList(growable: false).forEach((int i) {
-      ret.removeAt(i);
-    });
-
-    return ret;
-  }
-
   test('pawn forward', () {
     const Type t = Type.pawnf;
     Point base = Point(6, 1);
@@ -36,13 +10,11 @@ void main() {
     List<Point> ps = [Point(4, 1), Point(5, 1)];
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
@@ -52,13 +24,11 @@ void main() {
 
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(true, false);
       }
     });
@@ -71,13 +41,11 @@ void main() {
     List<Point> ps = [Point(2, 1), Point(3, 1)];
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
@@ -87,13 +55,11 @@ void main() {
 
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(true, false);
       }
     });
@@ -124,14 +90,12 @@ void main() {
 
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
 
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(true, false);
       }
     });
@@ -146,26 +110,24 @@ void main() {
 
     final List<Point> ps = [
       // normal regurssion
-      Point(6, 5),
-      Point(6, 3),
-      Point(5, 6),
-      Point(5, 2),
-      Point(3, 6),
-      Point(3, 2),
-      Point(2, 5),
-      Point(2, 3),
+      Point(6, 5), // +2, +1
+      Point(6, 3), // +2, -1
+      Point(5, 6), // +1, +2
+      Point(5, 2), // +1, -2
+      Point(3, 6), // -1, +2
+      Point(3, 2), // -1, -2
+      Point(2, 5), // -2, +1
+      Point(2, 3), // -2, -1
     ];
 
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
 
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(true, false);
       }
     });
@@ -195,14 +157,12 @@ void main() {
 
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
 
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(true, false);
       }
     });
@@ -258,14 +218,12 @@ void main() {
 
     ps.forEach((p) {
       if (Piece(base, t, 1).canGo(p) != true) {
-        print("${p.x}:${p.y}");
         expect(false, true);
       }
     });
 
-    possible(ps).forEach((p) {
+    ps.outside().forEach((p) {
       if (Piece(base, t, 1).canGo(p) != false) {
-        print("${p.x}:${p.y}");
         expect(true, false);
       }
     });

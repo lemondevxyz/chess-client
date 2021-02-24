@@ -1,4 +1,4 @@
-import "package:chess_client/src/board/rules.dart";
+import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
 import 'package:flutter/material.dart';
 
@@ -63,7 +63,7 @@ class Board {
         if (p != null) {
           str += p.t.toShortString() + " ";
         } else {
-          str += " ";
+          str += "  ";
         }
       });
     });
@@ -85,39 +85,101 @@ class Board {
     return this._data[p.x][p.y];
   }
 
-  bool move(Piece p, Point dst) {
-    if (p != null) {
+  bool canGo(Piece p, Point dst) {
+    if (p == null || !dst.valid()) {
       return false;
     }
 
-    bool ok = p.canGo(dst);
+    int x = p.pos.x;
+    int y = p.pos.y;
 
+    bool ok = p.canGo(dst);
+    print("$ok");
     if (p.t == Type.pawnf || p.t == Type.pawnb) {
-      int x = p.pos.x;
       if (p.t == Type.pawnf) {
         x--;
       } else {
         x++;
       }
 
-      final int y = p.pos.y;
+      // maybe pawn is going forward/backward
+      if (ok) {
+        // oops there is a piece in the way...
+        if (this.get(dst) != null) {
+          return false;
+        }
+      }
 
-      if (!ok) {
-        if (this.get(Point(x, y + 1)) != null) {
-          ok = true;
-        } else if (this.get(Point(x, y - 1)) != null) {
+      <Point>[
+        Point(x, y + 1),
+        Point(x, y - 1),
+      ].forEach((p) {
+        if (dst.equal(p)) {
           ok = true;
         }
-      } else {
-        Piece o = this.get(Point(x, y));
-        if (o != null) {
+      });
+
+      // okay pawn is going +1, +1
+      // or +1, -1
+      if (ok) {
+        final o = this.get(dst);
+        // no piece there or piece belongs to us..
+        if (o == null || o.num == p.num) {
           ok = false;
+        }
+      }
+
+      return ok;
+    } else {
+      if (!ok) {
+        return ok;
+      }
+    }
+
+    final int dir = p.pos.direction(dst);
+    if (p.t != Type.knight) {
+      for (var i = 0; i < 8; i++) {
+        if (Direction.has(dir, Direction.up)) {
+          x--;
+        } else if (Direction.has(dir, Direction.down)) {
+          x++;
+        }
+
+        if (Direction.has(dir, Direction.left)) {
+          y--;
+        } else if (Direction.has(dir, Direction.right)) {
+          y++;
+        }
+
+        final o = Point(x, y);
+        if (!o.valid() || o.equal(dst)) {
+          break;
+        }
+
+        // something is in the way...
+        if (this.get(o) != null) {
+          return false;
         }
       }
     }
 
+    return true;
+  }
+
+  bool move(Piece p, Point dst) {
+    if (p == null || !dst.valid()) {
+      return false;
+    }
+
+    bool ok = this.canGo(p, dst);
     if (ok) {
-      this._data[dst.x][dst.y] = null;
+      final o = this.get(dst);
+      // friendly fire not allowed !!!
+      if (o != null && o.num == p.num) {
+        return false;
+      }
+
+      this._data[p.pos.x][p.pos.y] = null;
 
       p.pos = dst;
       this.set(p);
@@ -130,9 +192,6 @@ class Board {
 class _BoardState extends State<BoardWidget> {
   static final Color pri = Colors.white;
   static final Color sec = Colors.grey[400];
-
-  static final double width = 100;
-  static final double height = width;
 
   static final Board b = Board();
 
@@ -184,7 +243,7 @@ class _BoardState extends State<BoardWidget> {
         } else {
           if (possib != null) {
             for (var point in possib) {
-              if (equal(Point(x, y), point)) {
+              if (Point(x, y).equal(point)) {
                 w = Container(
                   decoration: new BoxDecoration(
                     color: Colors.grey[600],
@@ -214,6 +273,10 @@ class _BoardState extends State<BoardWidget> {
                   setState(() {
                     bool bo = b.move(p, Point(x, y));
                     debugPrint("$focus $bo $x:$y $p");
+
+                    //focus = null;
+                    possib = null;
+                    print("$b");
                   });
                 }
               }
