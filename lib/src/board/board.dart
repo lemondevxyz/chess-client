@@ -94,7 +94,6 @@ class Board {
     int y = p.pos.y;
 
     bool ok = p.canGo(dst);
-    print("$ok");
     if (p.t == Type.pawnf || p.t == Type.pawnb) {
       if (p.t == Type.pawnf) {
         x--;
@@ -108,24 +107,24 @@ class Board {
         if (this.get(dst) != null) {
           return false;
         }
-      }
+      } else {
+        <Point>[
+          Point(x, y + 1),
+          Point(x, y - 1),
+        ].forEach((p) {
+          if (dst.equal(p)) {
+            ok = true;
+          }
+        });
 
-      <Point>[
-        Point(x, y + 1),
-        Point(x, y - 1),
-      ].forEach((p) {
-        if (dst.equal(p)) {
-          ok = true;
-        }
-      });
-
-      // okay pawn is going +1, +1
-      // or +1, -1
-      if (ok) {
-        final o = this.get(dst);
-        // no piece there or piece belongs to us..
-        if (o == null || o.num == p.num) {
-          ok = false;
+        // okay pawn is going +1, +1
+        // or +1, -1
+        if (ok) {
+          final o = this.get(dst);
+          // no piece there or piece belongs to us..
+          if (o == null || o.num == p.num) {
+            ok = false;
+          }
         }
       }
 
