@@ -79,6 +79,15 @@ class Point {
 
   const Point(this.x, this.y);
 
+  Point.fromJSON(Map<String, dynamic> json)
+      : x = json["x"],
+        y = json["y"];
+
+  Map<String, dynamic> toJson() => {
+        "x": this.x,
+        "y": y,
+      };
+
   // valid returns false if the point is out of bounds
   bool valid() {
     return this.x < 8 && this.x >= 0 && this.y < 8 && this.y >= 0;
