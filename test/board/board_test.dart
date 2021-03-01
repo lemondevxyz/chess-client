@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import "package:test/test.dart";
 import "package:chess_client/src/board/board.dart";
 import "package:chess_client/src/board/piece.dart";
@@ -60,5 +62,13 @@ void main() {
       print("queen can move over pawn");
       expect(false, true);
     }
+  });
+
+  test("board json decode", () {
+    // this is taken from chess-server
+    final data =
+        '[[{"player":1,"type":5},{"player":1,"type":4},{"player":1,"type":3},{"player":1,"type":7},{"player":1,"type":6},{"player":1,"type":3},{"player":1,"type":4},{"player":1,"type":5}],[{"player":1,"type":2},{"player":1,"type":2},{"player":1,"type":2},{"player":1,"type":2},{"player":1,"type":2},{"player":1,"type":2},{"player":1,"type":2},{"player":1,"type":2}],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[{"player":2,"type":1},{"player":2,"type":1},{"player":2,"type":1},{"player":2,"type":1},{"player":2,"type":1},{"player":2,"type":1},{"player":2,"type":1},{"player":2,"type":1}],[{"player":2,"type":5},{"player":2,"type":4},{"player":2,"type":3},{"player":2,"type":7},{"player":2,"type":6},{"player":2,"type":3},{"player":2,"type":4},{"player":2,"type":5}]]';
+
+    final obj = jsonDecode(data);
   });
 }

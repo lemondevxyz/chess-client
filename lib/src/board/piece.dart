@@ -38,6 +38,10 @@ class Piece {
   // piece type
   Type t = Type.empty;
 
+  Piece.fromJson(Map<String, dynamic> json)
+      : num = json["player"],
+        t = Type.values[json["type"]];
+
   Piece(this.pos, this.t, this.num);
 
   String toString() {

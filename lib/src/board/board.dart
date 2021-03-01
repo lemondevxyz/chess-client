@@ -1,24 +1,41 @@
+import 'dart:convert';
+
 import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
 import 'package:flutter/material.dart';
 
 class Board {
-  var alt1 = List<Type>.filled(8, Type.pawnb);
-  List<Type> alt2 = [
-    Type.rook,
-    Type.knight,
-    Type.bishop,
-    Type.king,
-    Type.queen,
-    Type.bishop,
-    Type.knight,
-    Type.rook,
-  ];
-
   static const int max = 8;
   var _data = List<List<Piece>>.empty(growable: true);
 
+  Board.fromJson(List<dynamic> json) {
+    for (var i = 0; i < max; i++) {
+      this._data.add(List<Piece>.filled(max, null));
+    }
+
+    json.asMap().forEach((x, list) {
+      list.asMap().forEach((y, piece) {
+        if (piece != null) {
+          print("$piece ${piece.runtimeType}");
+          this._data[x][y] = Piece.fromJson(piece);
+        }
+      });
+    });
+  }
+
   Board() {
+    var alt1 = List<Type>.filled(8, Type.pawnb);
+    List<Type> alt2 = [
+      Type.rook,
+      Type.knight,
+      Type.bishop,
+      Type.king,
+      Type.queen,
+      Type.bishop,
+      Type.knight,
+      Type.rook,
+    ];
+
     for (var i = 0; i < max; i++) {
       this._data.add(List<Piece>.filled(max, null));
     }
