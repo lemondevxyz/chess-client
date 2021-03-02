@@ -1,10 +1,9 @@
 import 'dart:async';
 
+import 'package:chess_client/src/order/model.dart';
+import 'package:chess_client/src/order/order.dart';
 import "package:event/event.dart";
 import 'package:chess_client/src/board/generator.dart';
-import 'package:chess_client/src/game/command.dart';
-import 'package:chess_client/src/game/order.dart';
-import 'package:chess_client/src/game/update.dart';
 import "package:http/http.dart" as http;
 import "dart:io";
 import "dart:convert";
@@ -57,10 +56,11 @@ final defaultServConf =
 class Server {
   final ServerConf conf;
 
-  String _token;
-  String _publicID;
+  Credentials _credentials;
 
-  String get publicID => _publicID;
+  String get publicId {
+    return this._credentials.publicId;
+  }
 
   static const routes = {
     // where to send cmd requests
@@ -84,7 +84,7 @@ class Server {
 
   WebSocket _socket;
 
-  final listenEvent = Event<Update>();
+  final update = Event<Order>();
 
   Future<String> getRequest(String route) async {
     if (this._socket == null) {
@@ -148,7 +148,7 @@ class Server {
   Future<void> sendCommand(Order cmd) async {
     String json = "";
     try {
-      jsonEncode(json);
+      json = jsonEncode(cmd);
     } catch (e) {
       return Future.error(e);
     }
@@ -157,47 +157,39 @@ class Server {
   }
 
   Future<void> cmdPiece(Point src, Point dst) async {
-    return sendCommand(Order(CmdID.Piece.index, CmdPiece(src, dst)));
+    return sendCommand(Order(OrderID.Move, Move(src, dst)));
   }
 
   Future<void> invite(String id) async {
-    String json = "";
-    try {
-      json = jsonEncode(<String, String>{"id": id});
-      print(json);
-    } catch (e) {
-      print(e);
-      return Future.error(e);
-    }
-
-    return this.postRequest(Server.routes["invite"], json);
+    return this
+        .postRequest(Server.routes["invite"], jsonEncode(Invite(id).toJson()));
   }
 
   Future<void> acceptInvite(String id) async {
-    final json = <String, String>{"id": id};
-    return this.postRequest(Server.routes["accept"], jsonEncode(json));
+    return this
+        .postRequest(Server.routes["accept"], jsonEncode(Invite(id).toJson()));
   }
 
   Future<void> connect() async {
     final fut = Completer<void>();
+    final handler = (Order o) {
+      if (o.id == OrderID.Credentials) {
+        final cred = Credentials.fromJson(o.obj);
+        this._credentials = cred;
+        this.headers["Authorization"] = "Bearer ${cred.token}";
+      }
+    };
+    this.update.subscribe(handler);
 
     WebSocket.connect(this.conf.ws(Server.routes["ws"])).then((ws) {
       this._socket = ws;
       ws.listen((data) {
-        if (data is String) {
-          // first message
-          if (this._token == null && this._publicID == null) {
-            final obj = jsonDecode(data);
-            final Map<String, String> list = obj != null ? Map.from(obj) : null;
-
-            this._token = list["token"];
-            this._publicID = list["publicid"];
-
-            this.headers["Authorization"] = "Bearer ${this._token}";
-            fut.complete();
-          }
+        final map = jsonDecode(data);
+        if (map is Map<String, dynamic>) {
+          this.update.broadcast(Order.fromJson(map));
         }
       });
+      fut.complete();
       // TODO: add onclose function..
     }).catchError((e) {
       fut.completeError(e);

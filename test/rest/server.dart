@@ -53,7 +53,7 @@ void main() {
   test("send invite", () {
     String inviteID = "";
     for (var id in ids) {
-      if (id != p2.publicID) {
+      if (id != p2.publicId) {
         inviteID = id;
         break;
       }
