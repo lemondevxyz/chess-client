@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import "package:event/event.dart";
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/game/command.dart';
 import 'package:chess_client/src/game/order.dart';
+import 'package:chess_client/src/game/update.dart';
 import "package:http/http.dart" as http;
 import "dart:io";
 import "dart:convert";
@@ -60,8 +62,6 @@ class Server {
 
   String get publicID => _publicID;
 
-  static const idlen = 20;
-
   static const routes = {
     // where to send cmd requests
     "cmd": "/cmd",
@@ -83,6 +83,8 @@ class Server {
   };
 
   WebSocket _socket;
+
+  final listenEvent = Event<Update>();
 
   Future<String> getRequest(String route) async {
     if (this._socket == null) {
