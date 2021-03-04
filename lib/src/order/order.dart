@@ -8,12 +8,14 @@ enum OrderID {
   Empty,
   Credentials, // [U]
   Invite, // [O]
+  Game, // [U]
   Move, // [O]
   Turn, // [U]
   Promotion, // [U]
   Promote, // [C]
   Pause, // [O]
   Message, // [O]
+  Done, // [U]
 }
 
 class Order extends EventArgs {

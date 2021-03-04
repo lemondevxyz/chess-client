@@ -16,7 +16,6 @@ class Board {
     json.asMap().forEach((x, list) {
       list.asMap().forEach((y, piece) {
         if (piece != null) {
-          print("$piece ${piece.runtimeType}");
           this._data[x][y] = Piece.fromJson(piece);
         }
       });
