@@ -7,8 +7,8 @@ import 'package:chess_client/src/order/order.dart';
 import "package:event/event.dart";
 import 'package:chess_client/src/board/generator.dart';
 import "package:http/http.dart" as http;
-import "dart:io";
 import "dart:convert";
+import "package:websocket/websocket.dart";
 
 class ServerConf {
   // amount of time to wait, before we completely stop trying to reconnect.
@@ -62,6 +62,7 @@ class Server {
 
   String get publicId => this._credentials.publicId;
 
+  static const reconnectDuration = Duration(seconds: 30);
   static const routes = {
     // where to send cmd requests
     "cmd": "/cmd",
@@ -118,6 +119,8 @@ class Server {
         } else {
           c.complete(r.body);
         }
+      }).catchError((e) {
+        c.completeError(e);
       });
     } catch (e) {
       c.completeError(e);
@@ -207,9 +210,7 @@ class Server {
 
   bool isConnected() {
     if (_socket != null) {
-      if (_socket.readyState == WebSocket.open) {
-        return true;
-      }
+      return true;
     }
 
     return false;
@@ -228,6 +229,7 @@ class Server {
       t.cancel();
     });
     this._inviteTimers.clear();
+    this.onInvite.broadcast();
   }
 
   Future<void> acceptInvite(String id) async {
@@ -239,6 +241,7 @@ class Server {
         fut.complete();
         this.cleanInvite();
       }).catchError((e) {
+        this.invites.remove(id);
         fut.completeError(e);
       });
 
@@ -266,10 +269,9 @@ class Server {
     WebSocket.connect(this.conf.ws(Server.routes["ws"])).then((ws) {
       c.complete();
 
-      onConnect.broadcast();
       _socket = ws;
 
-      ws.listen((data) {
+      ws.stream.listen((data) {
         final map = jsonDecode(data);
         if (map is Map<String, dynamic>) {
           final o = Order.fromJson(map);
@@ -314,10 +316,15 @@ class Server {
       });
 
       ws.done.then((_) {
-        print("done");
         this.onDisconnect.broadcast();
         this._clean();
       });
+
+      try {
+        onConnect.broadcast();
+      } catch (e) {
+        c.completeError(e);
+      }
     }).catchError((e) {
       c.completeError(e);
     });
@@ -343,7 +350,8 @@ class Server {
 
   void _gameReceiver(Game g) {
     this._game = g;
-    // no need to clear everything. acceptInvite does it automatically.
+    onGame.broadcast();
+    // no need to clear invite. acceptInvite does it automatically.
   }
 
   void _moveReceiver(Move m) {
@@ -353,7 +361,6 @@ class Server {
   }
 
   void _turnReceiver(Turn t) {
-    print("adssa ${t.toJson()}");
     if (inGame) {
       this._playerTurn = t.player;
     } else {

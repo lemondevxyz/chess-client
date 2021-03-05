@@ -208,14 +208,14 @@ class _BoardState extends State<BoardWidget> {
   static final Color pri = Colors.white;
   static final Color sec = Colors.grey[400];
 
-  static final Board b = Board();
-
   final List<Container> cont = List<Container>.empty(growable: true);
 
   Point focus;
 
   @override
   Widget build(BuildContext context) {
+    final b = widget.b;
+
     Color primary = pri;
     Color secondary = sec;
 
@@ -322,6 +322,9 @@ class _BoardState extends State<BoardWidget> {
 }
 
 class BoardWidget extends StatefulWidget {
+  const BoardWidget(this.b);
+  final Board b;
+
   @override
   createState() => _BoardState();
 }

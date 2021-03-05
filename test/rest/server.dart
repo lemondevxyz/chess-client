@@ -76,8 +76,8 @@ void main() {
     final fut = Completer<List<String>>();
     p2.connect().then((_) {
       p2.getAvaliableUsers().then((list) {
-        if (list.length != 2) {
-          fut.completeError("list length is not 2. list: $list");
+        if (list.length != 1) {
+          fut.completeError("list length is not 1. list: $list");
         } else {
           ids.addAll(list);
           fut.complete(list);
@@ -93,15 +93,7 @@ void main() {
   });
 
   test("send invite", () {
-    String inviteID = "";
-    for (var id in ids) {
-      if (id != p2.publicId) {
-        inviteID = id;
-        break;
-      }
-    }
-
-    expect(p2.invite(inviteID), completes);
+    expect(p2.invite(ids.first), completes);
   });
 
   test("receive invite", () {
@@ -123,5 +115,9 @@ void main() {
 
   test("our turn?", () {
     expect(p1.player, p1.playerTurn);
+  });
+
+  test("players have different numbers", () {
+    expect(p1.player, isNot(p2.player));
   });
 }

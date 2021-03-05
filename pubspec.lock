@@ -458,6 +458,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.7.5"
+  websocket:
+    dependency: "direct main"
+    description:
+      name: websocket
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.5"
   yaml:
     dependency: transitive
     description:
