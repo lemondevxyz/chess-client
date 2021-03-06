@@ -1,5 +1,6 @@
 import "package:chess_client/src/board/board.dart";
 import "package:chess_client/src/board/generator.dart";
+import 'package:chess_client/src/board/piece.dart';
 
 class Credentials {
   final String token;
@@ -28,7 +29,7 @@ class Game {
         player = json["player"];
 
   Map<String, dynamic> toJson() => {
-        "board": board,
+        "board": board.toJson(),
         "player": player,
       };
 }
@@ -56,9 +57,9 @@ class Move {
       : src = json["src"],
         dst = json["dst"];
 
-  Map<String, Point> toJson() => {
-        "src": src,
-        "dst": dst,
+  Map<String, dynamic> toJson() => {
+        "src": src.toJson(),
+        "dst": dst.toJson(),
       };
 }
 
@@ -75,17 +76,17 @@ class Turn {
 }
 
 class Promotion {
-  final int player;
+  final Type type;
   final Point dst;
 
-  const Promotion(this.player, this.dst);
+  const Promotion(this.type, this.dst);
 
   Promotion.fromJson(Map<String, dynamic> json)
-      : player = json["player"] as int,
-        dst = json["dst"] as Point;
+      : type = Type.values[json["type"] as int],
+        dst = Point.fromJSON(json["dst"]);
 
   Map<String, dynamic> toJson() => {
-        "player": player,
+        "type": type.index,
         "dst": dst,
       };
 }
@@ -97,11 +98,11 @@ class Promote {
   const Promote(this.type, this.src);
 
   Promote.fromJson(Map<String, dynamic> json)
-      : type = json["type"] as Type,
+      : type = Type.values[json["type"] as int],
         src = json["src"] as Point;
 
   Map<String, dynamic> toJson() => {
-        "type": type,
+        "type": type.index,
         "src": src,
       };
 }

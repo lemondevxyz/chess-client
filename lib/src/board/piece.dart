@@ -1,5 +1,6 @@
 import "package:chess_client/src/board/generator.dart";
 
+// TODO: replace this with a class + change the name
 enum Type { empty, pawnf, pawnb, bishop, knight, rook, queen, king }
 
 final Map<Type, String> typeMap = {
@@ -41,6 +42,11 @@ class Piece {
   Piece.fromJson(Map<String, dynamic> json)
       : num = json["player"],
         t = Type.values[json["type"]];
+
+  Map<String, dynamic> toJson() => {
+        "player": this.num,
+        "type": t.index,
+      };
 
   Piece(this.pos, this.t, this.num);
 

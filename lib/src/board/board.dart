@@ -22,6 +22,10 @@ class Board {
     });
   }
 
+  List<List<Piece>> toJson() {
+    return _data;
+  }
+
   Board() {
     var alt1 = List<Type>.filled(8, Type.pawnb);
     List<Type> alt2 = [
@@ -98,7 +102,12 @@ class Board {
   }
 
   Piece get(Point p) {
-    return this._data[p.x][p.y];
+    final pie = this._data[p.x][p.y];
+    if (pie != null) {
+      pie.pos = p;
+    }
+
+    return pie;
   }
 
   bool canGo(Piece p, Point dst) {
@@ -221,14 +230,6 @@ class _BoardState extends State<BoardWidget> {
 
     var cont = <Widget>[];
 
-    List<Point> possib;
-    if (focus != null) {
-      final Piece p = b.get(focus);
-      if (p != null) {
-        possib = p.possib();
-      }
-    }
-
     for (var x = 0; x < Board.max; x++) {
       if ((x % 2) == 1) {
         primary = sec;
@@ -256,6 +257,7 @@ class _BoardState extends State<BoardWidget> {
 
           w = Image.asset(str);
         } else {
+          /* possib code
           if (possib != null) {
             for (var point in possib) {
               if (Point(x, y).equal(point)) {
@@ -270,12 +272,26 @@ class _BoardState extends State<BoardWidget> {
               }
             }
           }
+          */
         }
 
+        if (focus != null) {
+          if (focus.equal(Point(x, y))) {
+            clr = Theme.of(context).focusColor;
+          }
+        }
         final Container c = Container(color: clr, child: w);
 
         cont.add(GestureDetector(
             onTap: () {
+              if (!widget.canMove()) {
+                return;
+              }
+
+              if (p.num != widget.player) {
+                return;
+              }
+
               if (p != null) {
                 setState(() {
                   focus = Point(x, y);
@@ -284,14 +300,17 @@ class _BoardState extends State<BoardWidget> {
               }
               if (focus != null) {
                 final Piece p = b.get(focus);
+                print("piece $p");
                 if (p != null) {
-                  setState(() {
-                    bool bo = b.move(p, Point(x, y));
-                    debugPrint("$focus $bo $x:$y $p");
-
-                    //focus = null;
-                    possib = null;
-                    print("$b");
+                  final dst = Point(x, y);
+                  print("piece is not");
+                  print("${p.pos}, $dst");
+                  widget.move(p.pos, dst).then((_) {
+                    setState(() {
+                      focus = null;
+                    });
+                  }).catchError((e) {
+                    print("lamo error $e");
                   });
                 }
               }
@@ -322,8 +341,11 @@ class _BoardState extends State<BoardWidget> {
 }
 
 class BoardWidget extends StatefulWidget {
-  const BoardWidget(this.b);
+  const BoardWidget(this.b, this.player, this.move, this.canMove);
   final Board b;
+  final Future<void> Function(Point, Point) move;
+  final bool Function() canMove;
+  final int player;
 
   @override
   createState() => _BoardState();

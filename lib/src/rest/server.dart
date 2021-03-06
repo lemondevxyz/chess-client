@@ -94,6 +94,7 @@ class Server {
   final onDisconnect = Event(); // on websocket disconnection
   final onInvite = Event(); // on invite, whenever the player receives an invite
   final onGame = Event(); // on game, whenever a game starts
+  final onTurn = Event();
 
   // lock for invite system;
   int _playerTurn;
@@ -180,7 +181,7 @@ class Server {
     return sendCommand(Order(OrderID.Move, Move(src, dst)));
   }
 
-  Future<void> move(Point src, Point dst) {
+  Future<void> move(Point src, Point dst) async {
     if (!inGame) {
       return Future.error("not in game");
     }
@@ -189,7 +190,7 @@ class Server {
       return Future.error("not your turn");
     }
 
-    if (!src.valid() || !dst.valid()) {
+    if (src == null || dst == null || !src.valid() || !dst.valid()) {
       return Future.error("parameters are invalid");
     }
 
@@ -356,12 +357,16 @@ class Server {
 
   void _moveReceiver(Move m) {
     if (inGame) {
-      board.move(board.get(m.src), m.dst);
+      final p = board.get(m.src);
+      p.pos = m.dst;
+      board.set(p);
+      board.set(Piece(m.src, Type.empty, 0));
     }
   }
 
   void _turnReceiver(Turn t) {
     if (inGame) {
+      this.onTurn.broadcast();
       this._playerTurn = t.player;
     } else {
       this._playerTurn = 0;

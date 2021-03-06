@@ -1,4 +1,6 @@
 // implements generate.go
+import 'package:chess_client/src/board/piece.dart';
+
 class Direction {
   static const int up = 0x0001;
   static const int down = 0x0010;
@@ -84,7 +86,7 @@ class Point {
         y = json["y"];
 
   Map<String, dynamic> toJson() => {
-        "x": this.x,
+        "x": x,
         "y": y,
       };
 

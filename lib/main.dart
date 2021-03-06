@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chess_client/game.dart';
 import 'package:chess_client/hub.dart';
 import 'package:chess_client/src/rest/server.dart';
@@ -31,11 +33,13 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'Chess',
       theme: ThemeData(
-          primarySwatch: Colors.deepPurple,
-          buttonTheme: ButtonThemeData(
-            buttonColor: Colors.deepPurple, //  <-- dark color
-            textTheme: ButtonTextTheme.primary,
-          )),
+        primarySwatch: Colors.deepPurple,
+        buttonTheme: ButtonThemeData(
+          buttonColor: Colors.deepPurple, //  <-- dark color
+          textTheme: ButtonTextTheme.primary,
+        ),
+        focusColor: Colors.deepPurple[200],
+      ),
       onGenerateRoute: (RouteSettings settings) {
         switch (settings.name) {
           case "offline":
@@ -106,8 +110,21 @@ class OfflineRoute extends StatelessWidget {
   final Server s;
   const OfflineRoute(this.s);
 
+  void tryConnect() {
+    s.connect().then((_) {
+      print("CONNECTED");
+    }).catchError((e) {
+      print("$e");
+      Timer(Server.reconnectDuration, () {
+        tryConnect();
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    tryConnect();
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Offline"),
