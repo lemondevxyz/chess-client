@@ -94,7 +94,7 @@ class Server {
   final onDisconnect = Event(); // on websocket disconnection
   final onInvite = Event(); // on invite, whenever the player receives an invite
   final onGame = Event(); // on game, whenever a game starts
-  final onTurn = Event();
+  final onTurn = Event(); // when the turn changes
 
   // lock for invite system;
   int _playerTurn;
@@ -260,6 +260,14 @@ class Server {
     }
   }
 
+  bool ourTurn() {
+    if (!inGame) {
+      throw "not in game";
+    }
+
+    return playerTurn == _game.player;
+  }
+
   Future<void> connect() async {
     if (isConnected()) {
       return Future.error("already connected");
@@ -359,8 +367,8 @@ class Server {
     if (inGame) {
       final p = board.get(m.src);
       p.pos = m.dst;
-      board.set(p);
       board.set(Piece(m.src, Type.empty, 0));
+      board.set(p);
     }
   }
 

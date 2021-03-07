@@ -111,12 +111,11 @@ class OfflineRoute extends StatelessWidget {
   const OfflineRoute(this.s);
 
   void tryConnect() {
-    s.connect().then((_) {
-      print("CONNECTED");
-    }).catchError((e) {
-      print("$e");
+    s.connect().catchError((e) {
       Timer(Server.reconnectDuration, () {
-        tryConnect();
+        if (!s.isConnected()) {
+          tryConnect();
+        }
       });
     });
   }

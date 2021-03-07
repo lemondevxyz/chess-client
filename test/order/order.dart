@@ -4,6 +4,7 @@ import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/model.dart';
+import 'package:chess_client/src/order/order.dart';
 import "package:test/test.dart";
 
 void main() {
@@ -54,5 +55,13 @@ void main() {
   test("done", () {
     final d = Done(1);
     expect(jsonEncode(d), '{"result":1}');
+  });
+
+  test("order move", () {
+    final m = Move(Point(1, 1), Point(2, 2));
+    final o = Order(OrderID.Move, m);
+
+    expect(jsonEncode(o),
+        '{"id":4,"data":{"src":{"x":1,"y":1},"dst":{"x":2,"y":2}}}');
   });
 }

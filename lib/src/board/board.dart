@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
+import 'package:chess_client/src/rest/server.dart';
 import 'package:flutter/material.dart';
 
 class Board {
@@ -220,10 +221,18 @@ class _BoardState extends State<BoardWidget> {
   final List<Container> cont = List<Container>.empty(growable: true);
 
   Point focus;
+  Board b;
 
   @override
   Widget build(BuildContext context) {
-    final b = widget.b;
+    final s = widget.s;
+    b = s.board;
+
+    s.onTurn.subscribe((_) {
+      setState(() {
+        b = s.board;
+      });
+    });
 
     Color primary = pri;
     Color secondary = sec;
@@ -284,32 +293,35 @@ class _BoardState extends State<BoardWidget> {
 
         cont.add(GestureDetector(
             onTap: () {
-              if (!widget.canMove()) {
-                return;
-              }
-
-              if (p.num != widget.player) {
+              try {
+                if (!s.ourTurn()) {
+                  return;
+                }
+              } catch (e) {
                 return;
               }
 
               if (p != null) {
+                if (widget.s.player != p.num) {
+                  focus = null;
+                  return;
+                }
+
                 setState(() {
                   focus = Point(x, y);
                   debugPrint("$x:$y focus");
                 });
-              }
-              if (focus != null) {
+              } else if (focus != null) {
                 final Piece p = b.get(focus);
-                print("piece $p");
                 if (p != null) {
                   final dst = Point(x, y);
-                  print("piece is not");
                   print("${p.pos}, $dst");
-                  widget.move(p.pos, dst).then((_) {
+                  s.move(p.pos, dst).then((_) {
                     setState(() {
                       focus = null;
                     });
                   }).catchError((e) {
+                    focus = null;
                     print("lamo error $e");
                   });
                 }
@@ -341,11 +353,8 @@ class _BoardState extends State<BoardWidget> {
 }
 
 class BoardWidget extends StatefulWidget {
-  const BoardWidget(this.b, this.player, this.move, this.canMove);
-  final Board b;
-  final Future<void> Function(Point, Point) move;
-  final bool Function() canMove;
-  final int player;
+  const BoardWidget(this.s);
+  final Server s;
 
   @override
   createState() => _BoardState();

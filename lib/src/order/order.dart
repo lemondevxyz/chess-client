@@ -28,8 +28,10 @@ class Order extends EventArgs {
       : id = OrderID.values[json["id"] as int],
         obj = json["data"];
 
-  Map<String, dynamic> toJson() => {
-        "id": id,
-        "data": jsonEncode(obj),
-      };
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id.index,
+      "data": obj.toJson != null ? obj.toJson() : obj,
+    };
+  }
 }

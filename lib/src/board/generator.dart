@@ -81,7 +81,7 @@ class Point {
 
   const Point(this.x, this.y);
 
-  Point.fromJSON(Map<String, dynamic> json)
+  Point.fromJson(Map<String, dynamic> json)
       : x = json["x"],
         y = json["y"];
 

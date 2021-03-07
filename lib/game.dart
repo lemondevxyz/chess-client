@@ -34,13 +34,7 @@ class _GameState extends State<GameRoute> {
         children: <Widget>[
           Text(
               "Your turn? : ${widget.s.player == widget.s.playerTurn ? 'YES' : 'NO'}"),
-          BoardWidget(widget.s.board, widget.s.player, widget.s.move, () {
-            if (widget.s.player == widget.s.playerTurn) {
-              return true;
-            }
-
-            return false;
-          }),
+          BoardWidget(widget.s),
         ],
       ),
     );

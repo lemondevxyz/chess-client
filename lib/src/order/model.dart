@@ -54,8 +54,8 @@ class Move {
   const Move(this.src, this.dst);
 
   Move.fromJson(Map<String, dynamic> json)
-      : src = json["src"],
-        dst = json["dst"];
+      : src = Point.fromJson(json["src"] as Map<String, dynamic>),
+        dst = Point.fromJson(json["dst"] as Map<String, dynamic>);
 
   Map<String, dynamic> toJson() => {
         "src": src.toJson(),
@@ -83,7 +83,7 @@ class Promotion {
 
   Promotion.fromJson(Map<String, dynamic> json)
       : type = Type.values[json["type"] as int],
-        dst = Point.fromJSON(json["dst"]);
+        dst = Point.fromJson(json["dst"]);
 
   Map<String, dynamic> toJson() => {
         "type": type.index,
