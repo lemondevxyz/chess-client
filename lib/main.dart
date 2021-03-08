@@ -1,9 +1,7 @@
-import 'dart:async';
-
 import 'package:chess_client/game.dart';
 import 'package:chess_client/hub.dart';
-import 'package:chess_client/src/rest/server.dart';
 import 'package:flutter/material.dart';
+import 'global.dart' as global;
 
 const notificationDuration = Duration(seconds: 3);
 
@@ -12,23 +10,26 @@ void main() {
 }
 
 class App extends StatelessWidget {
-  final s = Server(defaultServConf);
-
   @override
   Widget build(BuildContext context) {
     final GlobalKey<NavigatorState> _navigator = GlobalKey<NavigatorState>();
 
-    s.onConnect.subscribe((_) {
+    global.server.onConnect.subscribe((_) {
       _navigator.currentState.pushNamed("hub");
     });
 
-    s.onDisconnect.subscribe((_) {
+    global.server.onDisconnect.subscribe((_) {
       _navigator.currentState.pushNamed("offline");
     });
 
-    s.onGame.subscribe((_) {
+    global.server.onGame.subscribe((_) {
       _navigator.currentState.pushNamed("game");
     });
+
+    String initialRoute = "offline";
+    if (global.debug == global.Debugging.game) {
+      initialRoute = "game";
+    }
 
     return MaterialApp(
       title: 'Chess',
@@ -39,20 +40,21 @@ class App extends StatelessWidget {
           textTheme: ButtonTextTheme.primary,
         ),
         focusColor: Colors.deepPurple[200],
+        fontFamily: "Lato",
       ),
       onGenerateRoute: (RouteSettings settings) {
         switch (settings.name) {
           case "offline":
-            return MaterialPageRoute(builder: (context) => OfflineRoute(s));
+            return MaterialPageRoute(builder: (context) => OfflineRoute());
           case "hub":
-            return MaterialPageRoute(builder: (context) => HubRoute(s));
+            return MaterialPageRoute(builder: (context) => HubRoute());
           case "game":
-            return MaterialPageRoute(builder: (context) => GameRoute(s));
+            return MaterialPageRoute(builder: (context) => GameRoute());
           default:
             return MaterialPageRoute(builder: (context) => Text("undefined"));
         }
       },
-      initialRoute: "offline",
+      initialRoute: initialRoute,
       navigatorKey: _navigator,
     );
   }
@@ -107,22 +109,9 @@ class _AppState extends State<App> {
 */
 
 class OfflineRoute extends StatelessWidget {
-  final Server s;
-  const OfflineRoute(this.s);
-
-  void tryConnect() {
-    s.connect().catchError((e) {
-      Timer(Server.reconnectDuration, () {
-        if (!s.isConnected()) {
-          tryConnect();
-        }
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    tryConnect();
+    //tryConnect();
 
     return Scaffold(
       appBar: AppBar(
@@ -133,7 +122,7 @@ class OfflineRoute extends StatelessWidget {
         child: TextButton(
           child: Text("Connect"),
           onPressed: () {
-            s.connect();
+            global.server.connect();
           },
         ),
       ),

@@ -4,7 +4,7 @@ import "package:test/test.dart";
 
 void main() {
   test('pawn forward', () {
-    const Type t = Type.pawnf;
+    const t = PieceKind.pawnf;
     Point base = Point(6, 1);
     // two step movement at start
     List<Point> ps = [Point(4, 1), Point(5, 1)];
@@ -35,7 +35,7 @@ void main() {
   });
 
   test('pawn backward', () {
-    const Type t = Type.pawnb;
+    const t = PieceKind.pawnb;
     Point base = Point(1, 1);
     // two step movement at start
     List<Point> ps = [Point(2, 1), Point(3, 1)];
@@ -67,7 +67,7 @@ void main() {
 
   test('bishop', () {
     const Point base = Point(4, 4);
-    const Type t = Type.bishop;
+    const t = PieceKind.bishop;
 
     final List<Point> ps = [
       // normal regurssion
@@ -106,7 +106,7 @@ void main() {
   // both directions
   test('knight', () {
     const Point base = Point(4, 4);
-    const Type t = Type.knight;
+    const t = PieceKind.knight;
 
     final List<Point> ps = [
       // normal regurssion
@@ -135,7 +135,7 @@ void main() {
 
   test('rook', () {
     const Point base = Point(4, 4);
-    const Type t = Type.rook;
+    const t = PieceKind.rook;
     final List<Point> ps = [
       // normal regurssion
       Point(7, 4),
@@ -169,7 +169,7 @@ void main() {
   });
 
   test('queen', () {
-    const Type t = Type.queen;
+    const t = PieceKind.queen;
     Point base = Point(4, 4);
 
     final List<Point> ps = [

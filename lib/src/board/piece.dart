@@ -1,33 +1,59 @@
 import "package:chess_client/src/board/generator.dart";
 
 // TODO: replace this with a class + change the name
-enum Type { empty, pawnf, pawnb, bishop, knight, rook, queen, king }
+class PieceKind {
+  static const empty = 0;
+  static const pawnf = 1;
+  static const pawnb = 2;
+  static const bishop = 3;
+  static const knight = 4;
+  static const rook = 5;
+  static const queen = 6;
+  static const king = 7;
 
-final Map<Type, String> typeMap = {
-  Type.empty: "",
-  Type.pawnf: "p",
-  Type.pawnb: "p",
-  Type.bishop: "b",
-  Type.knight: "n",
-  Type.rook: "r",
-  Type.queen: "q",
-  Type.king: "k",
-};
+  static const values = <int>[
+    empty,
+    pawnf,
+    pawnb,
+    bishop,
+    knight,
+    rook,
+    queen,
+    king,
+  ];
 
-final Map<Type, String> filenames = {
-  Type.empty: "",
-  Type.pawnf: "pawn.png",
-  Type.pawnb: "pawn.png",
-  Type.bishop: "bishop.png",
-  Type.knight: "knight.png",
-  Type.rook: "rook.png",
-  Type.queen: "queen.png",
-  Type.king: "king.png",
-};
+  final value;
 
-extension TypeToString on Type {
-  String toShortString() {
-    return typeMap[this].toUpperCase();
+  const PieceKind(this.value);
+
+  static Map<int, String> char = {
+    empty: "",
+    pawnf: "p",
+    pawnb: "p",
+    bishop: "b",
+    knight: "n",
+    rook: "r",
+    queen: "q",
+    king: "k",
+  };
+
+  static Map<int, String> filenames = {
+    empty: "",
+    pawnf: "pawn.png",
+    pawnb: "pawn.png",
+    bishop: "bishop.png",
+    knight: "knight.png",
+    rook: "rook.png",
+    queen: "queen.png",
+    king: "king.png",
+  };
+
+  String toString() {
+    return PieceKind.char[value];
+  }
+
+  static String toShortString(int value) {
+    return PieceKind.char[value];
   }
 }
 
@@ -37,15 +63,15 @@ class Piece {
   // player number
   int num;
   // piece type
-  Type t = Type.empty;
+  int t = PieceKind.empty;
 
   Piece.fromJson(Map<String, dynamic> json)
       : num = json["player"],
-        t = Type.values[json["type"]];
+        t = PieceKind.values[json["type"]];
 
   Map<String, dynamic> toJson() => {
         "player": this.num,
-        "type": t.index,
+        "type": t,
       };
 
   Piece(this.pos, this.t, this.num);
@@ -72,10 +98,10 @@ class Piece {
     final ps = <Point>[];
 
     switch (this.t) {
-      case Type.pawnb:
-      case Type.pawnf:
+      case PieceKind.pawnb:
+      case PieceKind.pawnf:
         {
-          if (this.t == Type.pawnb) {
+          if (this.t == PieceKind.pawnb) {
             ps.add(Point(this.pos.x + 1, this.pos.y));
           } else {
             ps.add(Point(this.pos.x - 1, this.pos.y));
@@ -89,27 +115,27 @@ class Piece {
 
           break;
         }
-      case Type.bishop:
+      case PieceKind.bishop:
         {
           ps.addAll(this.pos.diagonal());
           break;
         }
-      case Type.knight:
+      case PieceKind.knight:
         // 2,1 or -2, 1 or 2, -1 or -2, -1
         // 1,2 or -1, 2 or 1, -2 or -2, -1
         {
           ps.addAll(this.pos.knight());
           break;
         }
-      case Type.rook:
+      case PieceKind.rook:
         {
           ps.addAll(this.pos.rook());
           break;
         }
-      case Type.queen:
+      case PieceKind.queen:
         ps.addAll(this.pos.queen());
         break;
-      case Type.king:
+      case PieceKind.king:
         ps.addAll(this.pos.square());
         break;
     }

@@ -10,9 +10,11 @@ enum OrderID {
   Invite, // [O]
   Game, // [U]
   Move, // [O]
+  Possibility,
+  Possible,
   Turn, // [U]
-  Promotion, // [U]
   Promote, // [C]
+  Promotion, // [U]
   Pause, // [O]
   Message, // [O]
   Done, // [U]

@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
-import 'package:chess_client/src/rest/server.dart';
 import 'package:flutter/material.dart';
 
 class Board {
@@ -28,16 +25,16 @@ class Board {
   }
 
   Board() {
-    var alt1 = List<Type>.filled(8, Type.pawnb);
-    List<Type> alt2 = [
-      Type.rook,
-      Type.knight,
-      Type.bishop,
-      Type.king,
-      Type.queen,
-      Type.bishop,
-      Type.knight,
-      Type.rook,
+    var alt1 = List<int>.filled(8, PieceKind.pawnb);
+    List<int> alt2 = [
+      PieceKind.rook,
+      PieceKind.knight,
+      PieceKind.bishop,
+      PieceKind.king,
+      PieceKind.queen,
+      PieceKind.bishop,
+      PieceKind.knight,
+      PieceKind.rook,
     ];
 
     for (var i = 0; i < max; i++) {
@@ -51,7 +48,7 @@ class Board {
         alt1 = [];
         alt1.addAll(alt2);
 
-        alt2 = List<Type>.filled(8, Type.pawnf);
+        alt2 = List<int>.filled(8, PieceKind.pawnf);
 
         x += 5;
         num++;
@@ -82,7 +79,7 @@ class Board {
 
       l.forEach((p) {
         if (p != null) {
-          str += p.t.toShortString() + " ";
+          str += PieceKind.toShortString(p.t) + " ";
         } else {
           str += "  ";
         }
@@ -94,7 +91,7 @@ class Board {
 
   void set(Piece p) {
     if (p != null) {
-      if (p.t == Type.empty) {
+      if (p.t == PieceKind.empty) {
         this._data[p.pos.x][p.pos.y] = null;
       } else {
         this._data[p.pos.x][p.pos.y] = p;
@@ -120,8 +117,8 @@ class Board {
     int y = p.pos.y;
 
     bool ok = p.canGo(dst);
-    if (p.t == Type.pawnf || p.t == Type.pawnb) {
-      if (p.t == Type.pawnf) {
+    if (p.t == PieceKind.pawnf || p.t == PieceKind.pawnb) {
+      if (p.t == PieceKind.pawnf) {
         x--;
       } else {
         x++;
@@ -162,7 +159,7 @@ class Board {
     }
 
     final int dir = p.pos.direction(dst);
-    if (p.t != Type.knight) {
+    if (p.t != PieceKind.knight) {
       for (var i = 0; i < 8; i++) {
         if (Direction.has(dir, Direction.up)) {
           x--;
@@ -221,18 +218,11 @@ class _BoardState extends State<BoardWidget> {
   final List<Container> cont = List<Container>.empty(growable: true);
 
   Point focus;
-  Board b;
 
   @override
   Widget build(BuildContext context) {
-    final s = widget.s;
-    b = s.board;
-
-    s.onTurn.subscribe((_) {
-      setState(() {
-        b = s.board;
-      });
-    });
+    final yourTurn = widget.ourTurn();
+    final b = widget.board;
 
     Color primary = pri;
     Color secondary = sec;
@@ -257,7 +247,7 @@ class _BoardState extends State<BoardWidget> {
 
         Widget w;
         if (p != null) {
-          String str = filenames[p.t];
+          String str = PieceKind.filenames[p.t];
           if (p.num == 1) {
             str = "dark/" + str;
           } else {
@@ -294,37 +284,40 @@ class _BoardState extends State<BoardWidget> {
         cont.add(GestureDetector(
             onTap: () {
               try {
-                if (!s.ourTurn()) {
+                if (!yourTurn) {
                   return;
                 }
               } catch (e) {
                 return;
               }
 
-              if (p != null) {
-                if (widget.s.player != p.num) {
+              if (focus != null) {
+                final Piece p = b.get(focus);
+                if (p != null) {
+                  final src = p.pos;
+                  final dst = Point(x, y);
+                  widget.move(src, dst).then((_) {
+                    //print("succesful move $src $dst");
+                    setState(() {
+                      focus = null;
+                    });
+                  }).catchError((e) {
+                    setState(() {
+                      focus = null;
+                    });
+                    //print("lamo error $e");
+                  });
+                }
+              } else if (p != null) {
+                // no focus
+                if (!yourTurn) {
                   focus = null;
                   return;
                 }
 
                 setState(() {
                   focus = Point(x, y);
-                  debugPrint("$x:$y focus");
                 });
-              } else if (focus != null) {
-                final Piece p = b.get(focus);
-                if (p != null) {
-                  final dst = Point(x, y);
-                  print("${p.pos}, $dst");
-                  s.move(p.pos, dst).then((_) {
-                    setState(() {
-                      focus = null;
-                    });
-                  }).catchError((e) {
-                    focus = null;
-                    print("lamo error $e");
-                  });
-                }
               }
             },
             child: c));
@@ -334,7 +327,7 @@ class _BoardState extends State<BoardWidget> {
     return Expanded(
       child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.height - 100,
+            maxWidth: MediaQuery.of(context).size.height - 120,
           ),
           child: Container(
               color: Colors.white12,
@@ -342,7 +335,7 @@ class _BoardState extends State<BoardWidget> {
               child: Center(
                   child: GridView.count(
                 shrinkWrap: true,
-                //physics: NeverScrollableScrollPhysics(),
+                physics: NeverScrollableScrollPhysics(),
                 children: cont,
                 crossAxisCount: 8,
                 mainAxisSpacing: 5.0,
@@ -353,9 +346,12 @@ class _BoardState extends State<BoardWidget> {
 }
 
 class BoardWidget extends StatefulWidget {
-  const BoardWidget(this.s);
-  final Server s;
+  final Board board;
+  final Future<void> Function(Point src, Point dst) move;
+  final bool Function() ourTurn;
+
+  const BoardWidget(this.board, this.move, this.ourTurn);
 
   @override
-  createState() => _BoardState();
+  _BoardState createState() => _BoardState();
 }

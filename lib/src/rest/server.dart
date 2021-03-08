@@ -93,6 +93,7 @@ class Server {
   final onConnect = Event(); // on websocket connection
   final onDisconnect = Event(); // on websocket disconnection
   final onInvite = Event(); // on invite, whenever the player receives an invite
+  final _onPossible = Event<Possible>();
   final onGame = Event(); // on game, whenever a game starts
   final onTurn = Event(); // when the turn changes
 
@@ -179,6 +180,24 @@ class Server {
 
   Future<void> cmdPiece(Point src, Point dst) async {
     return sendCommand(Order(OrderID.Move, Move(src, dst)));
+  }
+
+  Future<List<Point>> possib(Point src) async {
+    final c = Completer<List<Point>>();
+    sendCommand(Order(OrderID.Possibility, Possibility(src))).then((_) {
+      Function(Possible) handler;
+
+      handler = (Possible possib) {
+        print("henlo");
+        c.complete(possib.points);
+        _onPossible.unsubscribe(handler);
+      };
+    }).catchError((e) {
+      print("possib bad");
+      c.completeError(e);
+    });
+
+    return c.future;
   }
 
   Future<void> move(Point src, Point dst) async {
@@ -297,6 +316,14 @@ class Server {
                 _inviteReceiver(inv);
               } catch (e) {}
               break;
+            case OrderID.Possible:
+              try {
+                final possib = Possible.fromJson(o.obj);
+                _onPossible.broadcast(possib);
+              } catch (e) {
+                print("possible $e");
+              }
+              break;
             case OrderID.Move:
               try {
                 final move = Move.fromJson(o.obj);
@@ -325,6 +352,7 @@ class Server {
       });
 
       ws.done.then((_) {
+        print("websocket done ${ws.closeCode}, ${ws.closeReason}");
         this.onDisconnect.broadcast();
         this._clean();
       });
@@ -367,7 +395,7 @@ class Server {
     if (inGame) {
       final p = board.get(m.src);
       p.pos = m.dst;
-      board.set(Piece(m.src, Type.empty, 0));
+      board.set(Piece(m.src, PieceKind.empty, 0));
       board.set(p);
     }
   }

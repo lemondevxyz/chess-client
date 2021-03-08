@@ -1,5 +1,5 @@
 #!/bin/sh
-for f in ./*; do
+for f in ./*.png; do
 	X=$(echo "$filename" | cut -f 1 -d '.')
-	inkscape -w 1024 -h 1024 "$f" -o "$X.png"
+	convert "$f" -resize 200x200 "$f"
 done

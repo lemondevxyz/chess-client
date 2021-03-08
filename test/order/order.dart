@@ -38,12 +38,12 @@ void main() {
 
   test("promotion", () {
     // TODO: replace type with kind
-    final p = Promotion(Type.rook, Point(1, 1));
+    final p = Promotion(PieceKind.rook, Point(1, 1));
     expect(jsonEncode(p), '{"type":5,"dst":{"x":1,"y":1}}');
   });
 
   test("promote", () {
-    final p = Promote(Type.rook, Point(1, 1));
+    final p = Promote(PieceKind.rook, Point(1, 1));
     expect(jsonEncode(p), '{"type":5,"src":{"x":1,"y":1}}');
   });
 
