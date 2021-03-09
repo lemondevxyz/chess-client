@@ -17,7 +17,13 @@ class _GameState extends State<GameRoute> {
   final Event moved = Event();
   final testing = global.debug == global.Debugging.game;
 
+  bool _reverse = false;
+
   _GameState() {
+    if (!testing) {
+      _reverse = (global.server.player == 1 ? false : true);
+    }
+
     _board().addListener(() {
       setState(() {});
     });
@@ -80,7 +86,8 @@ class _GameState extends State<GameRoute> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Text("Your Turn: ${_yourTurn() ? 'yes' : 'no'}"),
-            BoardWidget(_board(), _move(), _yourTurn, _canFocus()),
+            BoardWidget(_board(), _move(), _yourTurn, _canFocus(),
+                reverse: _reverse),
           ],
         ),
       ),

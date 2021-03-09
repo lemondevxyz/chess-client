@@ -257,7 +257,14 @@ class _BoardState extends State<BoardWidget> {
                       childAspectRatio: 1.0,
                     ),
                     itemBuilder: (BuildContext context, int index) {
-                      final pnt = Point.fromIndex(index);
+                      Point pnt = Point.fromIndex(index);
+                      if (widget.reverse) {
+                        final x = 7 - pnt.x;
+                        final y = 7 - pnt.y;
+
+                        pnt = Point(x.abs(), y);
+                      }
+
                       final pce = brd.get(pnt);
                       return GestureDetector(
                           onTap: () {
@@ -271,23 +278,28 @@ class _BoardState extends State<BoardWidget> {
                                   }
                                 }
                               } else {
-                                if (pce != null) {
-                                  final ecp = brd.get(focus);
-                                  print("level 1");
-                                  // well if we select an ally
-                                  // then shift focus to that piece
-                                  if (ecp.num == pce.num) {
-                                    print("level 2");
-                                    setState(() {
-                                      focus = pnt;
-                                    });
-                                  }
-                                } else {
-                                  print("level 3");
+                                final doMovement = () {
                                   widget.move(focus, pnt);
+
                                   setState(() {
                                     focus = null;
                                   });
+                                };
+
+                                if (pce != null) {
+                                  final ecp = brd.get(focus);
+                                  // well if we select an ally
+                                  // then shift focus to that piece
+                                  if (ecp.num == pce.num) {
+                                    setState(() {
+                                      focus = pnt;
+                                    });
+                                  } else {
+                                    // allow killing of enemy
+                                    doMovement();
+                                  }
+                                } else {
+                                  doMovement();
                                 }
                               }
                             }
@@ -316,12 +328,12 @@ class BoardWidget extends StatefulWidget {
   final Future<void> Function(Point src, Point dst) move;
   final bool Function() ourTurn;
   final bool Function(Piece) canFocus; // disallow selecting enemy pieces
+  final bool reverse;
 
-  BoardWidget(this.board, this.move, this.ourTurn, this.canFocus, {Key key})
+  BoardWidget(this.board, this.move, this.ourTurn, this.canFocus,
+      {Key key, this.reverse = false})
       : super(key: key);
 
   @override
-  _BoardState createState() {
-    return _BoardState();
-  }
+  _BoardState createState() => _BoardState();
 }

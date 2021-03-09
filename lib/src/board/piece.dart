@@ -83,9 +83,9 @@ class Piece {
 
   String filename() {
     String filename = PieceKind.filenames[t];
-    if (num == 1) {
+    if (num == 2) {
       filename = "dark/" + filename;
-    } else {
+    } else if (num == 1) {
       filename = "light/" + filename;
     }
 
