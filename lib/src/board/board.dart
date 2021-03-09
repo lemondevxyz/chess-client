@@ -1,8 +1,9 @@
 import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
+import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 
-class Board {
+class Board with ChangeNotifier {
   static const int max = 8;
   var _data = List<List<Piece>>.empty(growable: true);
 
@@ -96,6 +97,8 @@ class Board {
       } else {
         this._data[p.pos.x][p.pos.y] = p;
       }
+
+      notifyListeners();
     }
   }
 
@@ -219,129 +222,92 @@ class _BoardState extends State<BoardWidget> {
 
   Point focus;
 
-  @override
-  Widget build(BuildContext context) {
-    final yourTurn = widget.ourTurn();
-    final b = widget.board;
+  Color getBackground(Point pnt) {
+    final x = pnt.x;
+    final y = pnt.y;
 
-    Color primary = pri;
-    Color secondary = sec;
-
-    var cont = <Widget>[];
-
-    for (var x = 0; x < Board.max; x++) {
-      if ((x % 2) == 1) {
-        primary = sec;
-        secondary = pri;
-      } else {
-        primary = pri;
-        secondary = sec;
-      }
-
-      for (var y = 0; y < Board.max; y++) {
-        final Piece p = b.get(Point(x, y));
-        Color clr = primary;
-        if ((y % 2) == 1) {
-          clr = secondary;
-        }
-
-        Widget w;
-        if (p != null) {
-          String str = PieceKind.filenames[p.t];
-          if (p.num == 1) {
-            str = "dark/" + str;
-          } else {
-            str = "light/" + str;
-          }
-
-          w = Image.asset(str);
-        } else {
-          /* possib code
-          if (possib != null) {
-            for (var point in possib) {
-              if (Point(x, y).equal(point)) {
-                w = Container(
-                  decoration: new BoxDecoration(
-                    color: Colors.grey[600],
-                    shape: BoxShape.circle,
-                  ),
-                  margin: EdgeInsets.all(20),
-                );
-                break;
-              }
-            }
-          }
-          */
-        }
-
-        if (focus != null) {
-          if (focus.equal(Point(x, y))) {
-            clr = Theme.of(context).focusColor;
-          }
-        }
-        final Container c = Container(color: clr, child: w);
-
-        cont.add(GestureDetector(
-            onTap: () {
-              try {
-                if (!yourTurn) {
-                  return;
-                }
-              } catch (e) {
-                return;
-              }
-
-              if (focus != null) {
-                final Piece p = b.get(focus);
-                if (p != null) {
-                  final src = p.pos;
-                  final dst = Point(x, y);
-                  widget.move(src, dst).then((_) {
-                    //print("succesful move $src $dst");
-                    setState(() {
-                      focus = null;
-                    });
-                  }).catchError((e) {
-                    setState(() {
-                      focus = null;
-                    });
-                    //print("lamo error $e");
-                  });
-                }
-              } else if (p != null) {
-                // no focus
-                if (!yourTurn) {
-                  focus = null;
-                  return;
-                }
-
-                setState(() {
-                  focus = Point(x, y);
-                });
-              }
-            },
-            child: c));
-      }
+    Color pri = _BoardState.pri;
+    Color sec = _BoardState.sec;
+    if ((x % 2) == 0) {
+      pri = _BoardState.sec;
+      sec = _BoardState.pri;
     }
 
+    final clr = (y % 2) == 0 ? sec : pri;
+    return clr;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brd = widget.board;
+
     return Expanded(
-      child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.height - 120,
-          ),
-          child: Container(
-              color: Colors.white12,
-              margin: const EdgeInsets.all(20),
-              child: Center(
-                  child: GridView.count(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                children: cont,
-                crossAxisCount: 8,
-                mainAxisSpacing: 5.0,
-                childAspectRatio: 1.0,
-              )))),
-    );
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.height - 120,
+            ),
+            child: Container(
+                color: Colors.white12,
+                margin: const EdgeInsets.all(20),
+                child: Center(
+                  child: GridView.builder(
+                    itemCount: 8 * 8,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 8,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemBuilder: (BuildContext context, int index) {
+                      final pnt = Point.fromIndex(index);
+                      final pce = brd.get(pnt);
+                      return GestureDetector(
+                          onTap: () {
+                            if (widget.ourTurn()) {
+                              if (focus == null) {
+                                if (pce != null) {
+                                  if (widget.canFocus(pce)) {
+                                    setState(() {
+                                      focus = pnt;
+                                    });
+                                  }
+                                }
+                              } else {
+                                if (pce != null) {
+                                  final ecp = brd.get(focus);
+                                  print("level 1");
+                                  // well if we select an ally
+                                  // then shift focus to that piece
+                                  if (ecp.num == pce.num) {
+                                    print("level 2");
+                                    setState(() {
+                                      focus = pnt;
+                                    });
+                                  }
+                                } else {
+                                  print("level 3");
+                                  widget.move(focus, pnt);
+                                  setState(() {
+                                    focus = null;
+                                  });
+                                }
+                              }
+                            }
+                          },
+                          child: Container(
+                            color: (focus != null && pnt.equal(focus))
+                                ? Theme.of(context).primaryColor
+                                : getBackground(pnt),
+                            child: Stack(
+                              children: <Widget>[
+                                if (pce != null)
+                                  Image.asset(
+                                    pce.filename(),
+                                  ),
+                              ],
+                            ),
+                          ));
+                    },
+                  ),
+                ))));
   }
 }
 
@@ -349,9 +315,13 @@ class BoardWidget extends StatefulWidget {
   final Board board;
   final Future<void> Function(Point src, Point dst) move;
   final bool Function() ourTurn;
+  final bool Function(Piece) canFocus; // disallow selecting enemy pieces
 
-  const BoardWidget(this.board, this.move, this.ourTurn);
+  BoardWidget(this.board, this.move, this.ourTurn, this.canFocus, {Key key})
+      : super(key: key);
 
   @override
-  _BoardState createState() => _BoardState();
+  _BoardState createState() {
+    return _BoardState();
+  }
 }

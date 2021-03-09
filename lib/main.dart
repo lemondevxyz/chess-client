@@ -40,7 +40,7 @@ class App extends StatelessWidget {
           textTheme: ButtonTextTheme.primary,
         ),
         focusColor: Colors.deepPurple[200],
-        fontFamily: "Lato",
+        fontFamily: "Dubai",
       ),
       onGenerateRoute: (RouteSettings settings) {
         switch (settings.name) {

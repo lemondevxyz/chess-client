@@ -90,6 +90,13 @@ class Point {
         "y": y,
       };
 
+  factory Point.fromIndex(int i) {
+    final x = (i / 8).abs().toInt();
+    final y = (i % 8).abs().toInt();
+
+    return Point(x, y);
+  }
+
   // valid returns false if the point is out of bounds
   bool valid() {
     return this.x < 8 && this.x >= 0 && this.y < 8 && this.y >= 0;

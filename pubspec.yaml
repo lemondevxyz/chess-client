@@ -44,22 +44,32 @@ dev_dependencies:
 # The following section is specific to Flutter.
 flutter:
   assets:
-  - assets/light/pawn.png
-  - assets/light/rook.png
-  - assets/light/bishop.png
-  - assets/light/knight.png
-  - assets/light/queen.png
-  - assets/light/king.png
-  - assets/dark/pawn.png
-  - assets/dark/rook.png
-  - assets/dark/bishop.png
-  - assets/dark/knight.png
-  - assets/dark/queen.png
-  - assets/dark/king.png
+  # piece images
+  - assets/images/light/pawn.png
+  - assets/images/light/rook.png
+  - assets/images/light/bishop.png
+  - assets/images/light/knight.png
+  - assets/images/light/queen.png
+  - assets/images/light/king.png
+  - assets/images/dark/pawn.png
+  - assets/images/dark/rook.png
+  - assets/images/dark/bishop.png
+  - assets/images/dark/knight.png
+  - assets/images/dark/queen.png
+  - assets/images/dark/king.png
+  # font
+  - assets/fonts/dubai/regular.ttf
+  - assets/fonts/dubai/bold.ttf
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  fonts:
+  - family: Dubai
+    fonts:
+    - asset: assets/fonts/dubai/regular.ttf
+    - asset: assets/fonts/dubai/bold.ttf
+      weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

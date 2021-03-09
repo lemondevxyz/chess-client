@@ -58,6 +58,7 @@ class PieceKind {
 }
 
 class Piece {
+  static const _imagePrefix = "images/";
   // pos
   Point pos;
   // player number
@@ -78,6 +79,17 @@ class Piece {
 
   String toString() {
     return this.t.toString().split('.').last;
+  }
+
+  String filename() {
+    String filename = PieceKind.filenames[t];
+    if (num == 1) {
+      filename = "dark/" + filename;
+    } else {
+      filename = "light/" + filename;
+    }
+
+    return _imagePrefix + filename;
   }
 
   // canGo returns true if dst is a legal move
