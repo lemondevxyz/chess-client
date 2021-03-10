@@ -1,5 +1,3 @@
-import "dart:convert";
-
 import 'package:event/event.dart';
 
 // [U] refers to an Update, [C] refers to a Command.
@@ -10,8 +8,7 @@ enum OrderID {
   Invite, // [O]
   Game, // [U]
   Move, // [O]
-  Possibility,
-  Possible,
+  Possible, // [O]
   Turn, // [U]
   Promote, // [C]
   Promotion, // [U]

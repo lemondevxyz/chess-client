@@ -64,28 +64,19 @@ class Move {
       };
 }
 
-class Possibility {
+class Possible {
   final Point src;
+  final List<Map<String, dynamic>> points;
 
-  const Possibility(this.src);
+  Possible(this.src, this.points);
 
-  Possibility.fromJson(Map<String, dynamic> json)
-      : src = Point.fromJson(json["src"]);
+  Possible.fromJson(Map<String, dynamic> json)
+      : points = json["points"],
+        src = Point.fromJson(json["src"]);
 
   Map<String, dynamic> toJson() => {
-        "src": src.toJson(),
-      };
-}
-
-class Possible extends EventArgs {
-  final List<Point> points;
-
-  Possible(this.points);
-
-  Possible.fromJson(Map<String, dynamic> json) : points = json["points"];
-
-  Map<String, List<Point>> toJson() => {
-        "points": points,
+        if (points != null) "points": points,
+        if (src != null) "src": src,
       };
 }
 
@@ -117,11 +108,11 @@ class Promotion {
       };
 }
 
-class Promote {
+class Promote extends EventArgs {
   final int type;
   final Point src;
 
-  const Promote(this.type, this.src);
+  Promote(this.type, this.src);
 
   Promote.fromJson(Map<String, dynamic> json)
       : type = json["type"] as int,

@@ -76,6 +76,8 @@ class Server {
     "protect": "/protect",
     // where to get users that want to play
     "avali": "/avali",
+    // where to get avaliable moves
+    "possib": "/possib",
   };
 
   final Map<String, String> _headers = {
@@ -93,9 +95,9 @@ class Server {
   final onConnect = Event(); // on websocket connection
   final onDisconnect = Event(); // on websocket disconnection
   final onInvite = Event(); // on invite, whenever the player receives an invite
-  final _onPossible = Event<Possible>();
   final onGame = Event(); // on game, whenever a game starts
   final onTurn = Event(); // when the turn changes
+  final onPromote = Event<Promote>();
 
   // lock for invite system;
   int _playerTurn;
@@ -103,8 +105,8 @@ class Server {
 
   int get playerTurn => _playerTurn;
   bool get inGame => _game != null;
-  int get player => _game.player;
-  Board get board => _game.board;
+  int get player => inGame ? _game.player : 0;
+  Board get board => inGame ? _game.board : null;
 
   Future<String> getRequest(String route) async {
     if (!isConnected()) {
@@ -131,12 +133,12 @@ class Server {
     return c.future;
   }
 
-  Future<void> postRequest(String route, String data) async {
+  Future<String> postRequest(String route, String data) async {
     if (!isConnected()) {
       return Future.error("socket is null");
     }
 
-    final c = Completer();
+    final c = Completer<String>();
     final String url = this.conf.http(route);
 
     try {
@@ -144,7 +146,7 @@ class Server {
         if (r.statusCode != 200) {
           c.completeError("${r.body}");
         } else {
-          c.complete();
+          c.complete(r.body);
         }
       });
     } catch (e) {
@@ -184,16 +186,19 @@ class Server {
 
   Future<List<Point>> possib(Point src) async {
     final c = Completer<List<Point>>();
-    sendCommand(Order(OrderID.Possibility, Possibility(src))).then((_) {
-      Function(Possible) handler;
+    postRequest(Server.routes["possib"], jsonEncode(Possible(src, null)))
+        .then((body) {
+      final json = jsonDecode(body);
+      final ls = <Point>[];
 
-      handler = (Possible possib) {
-        print("henlo");
-        c.complete(possib.points);
-        _onPossible.unsubscribe(handler);
-      };
+      (json["points"] as List<dynamic>).forEach((x) {
+        if (x is Map<String, dynamic>) {
+          ls.add(Point.fromJson(x));
+        }
+      });
+
+      c.complete(ls);
     }).catchError((e) {
-      print("possib bad");
       c.completeError(e);
     });
 
@@ -307,46 +312,74 @@ class Server {
             case OrderID.Credentials:
               try {
                 final cred = Credentials.fromJson(o.obj);
-                _credentialsReceiver(cred);
-              } catch (e) {}
+
+                this._credentials = cred;
+                this._headers["Authorization"] = "Bearer ${cred.token}";
+              } catch (e) {
+                print("listen.credentials: $e");
+              }
               break;
             case OrderID.Invite:
               try {
                 final inv = Invite.fromJson(o.obj);
                 _inviteReceiver(inv);
-              } catch (e) {}
-              break;
-            case OrderID.Possible:
-              try {
-                final possib = Possible.fromJson(o.obj);
-                _onPossible.broadcast(possib);
               } catch (e) {
-                print("possible $e");
+                print("listen.invite: $e");
               }
               break;
             case OrderID.Move:
               try {
                 final move = Move.fromJson(o.obj);
-                _moveReceiver(move);
-              } catch (e) {}
+
+                final pec = board.get(move.src);
+                pec.pos = move.dst;
+                board.set(Piece(move.src, PieceKind.empty, 0));
+                board.set(pec);
+              } catch (e) {
+                print("listen.move: $e");
+              }
+              break;
+            case OrderID.Promote:
+              try {
+                final promote = Promote.fromJson(o.obj);
+                onPromote.broadcast(promote);
+              } catch (e) {
+                print("listen.promote: $e");
+              }
+              break;
+            case OrderID.Promotion:
+              try {
+                final promotion = Promotion.fromJson(o.obj);
+
+                final pec = board.get(promotion.dst);
+                board.set(Piece(pec.pos, promotion.type, pec.t));
+              } catch (e) {
+                print("listen.promotion: $e");
+              }
               break;
             case OrderID.Turn:
               try {
                 final turn = Turn.fromJson(o.obj);
-                _turnReceiver(turn);
-              } catch (e) {}
+                this._playerTurn = turn.player;
+              } catch (e) {
+                print("listen.turn: $e");
+              }
               break;
             case OrderID.Game:
               try {
                 final g = Game.fromJson(o.obj);
                 _gameReceiver(g);
-              } catch (e) {}
+              } catch (e) {
+                print("listen.game: $e");
+              }
               break;
             case OrderID.Done:
               try {
                 final d = Done.fromJson(o.obj);
                 _doneReceiver(d);
-              } catch (e) {}
+              } catch (e) {
+                print("listen.done: $e");
+              }
           }
         }
       });
@@ -369,11 +402,6 @@ class Server {
     return c.future;
   }
 
-  void _credentialsReceiver(Credentials c) {
-    this._credentials = c;
-    this._headers["Authorization"] = "Bearer ${c.token}";
-  }
-
   void _inviteReceiver(Invite i) {
     this.invites.add(i);
     this.onInvite.broadcast();
@@ -389,24 +417,6 @@ class Server {
     this._game = g;
     onGame.broadcast();
     // no need to clear invite. acceptInvite does it automatically.
-  }
-
-  void _moveReceiver(Move m) {
-    if (inGame) {
-      final p = board.get(m.src);
-      p.pos = m.dst;
-      board.set(Piece(m.src, PieceKind.empty, 0));
-      board.set(p);
-    }
-  }
-
-  void _turnReceiver(Turn t) {
-    if (inGame) {
-      //this.onTurn.broadcast();
-      this._playerTurn = t.player;
-    } else {
-      this._playerTurn = 0;
-    }
   }
 
   void _doneReceiver(Done d) {

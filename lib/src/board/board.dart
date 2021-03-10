@@ -3,6 +3,29 @@ import "package:chess_client/src/board/piece.dart";
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 
+String numToString(int i) {
+  switch (i) {
+    case 1:
+      return "A";
+    case 2:
+      return "B";
+    case 3:
+      return "C";
+    case 4:
+      return "D";
+    case 5:
+      return "E";
+    case 6:
+      return "F";
+    case 7:
+      return "G";
+    case 8:
+      return "H";
+  }
+
+  return "";
+}
+
 class Board with ChangeNotifier {
   static const int max = 8;
   var _data = List<List<Piece>>.empty(growable: true);
@@ -218,7 +241,10 @@ class _BoardState extends State<BoardWidget> {
   static final Color pri = Colors.white;
   static final Color sec = Colors.grey[400];
 
-  final List<Container> cont = List<Container>.empty(growable: true);
+  static final double indexSizeDivider = 7;
+  static final double indexPadding = 2.5;
+
+  List<Point> _points = List<Point>.empty(growable: true);
 
   Point focus;
 
@@ -235,6 +261,18 @@ class _BoardState extends State<BoardWidget> {
 
     final clr = (y % 2) == 0 ? sec : pri;
     return clr;
+  }
+
+  void _setPoints() async {
+    if (focus != null && widget.possib != null) {
+      widget.possib(focus).then((_value) {
+        setState(() {
+          _points = _value;
+        });
+      }).catchError((e) {
+        print("possib $e");
+      });
+    }
   }
 
   @override
@@ -258,6 +296,10 @@ class _BoardState extends State<BoardWidget> {
                     ),
                     itemBuilder: (BuildContext context, int index) {
                       Point pnt = Point.fromIndex(index);
+
+                      final orix = pnt.x;
+                      final oriy = pnt.y;
+
                       if (widget.reverse) {
                         final x = 7 - pnt.x;
                         final y = 7 - pnt.y;
@@ -274,6 +316,7 @@ class _BoardState extends State<BoardWidget> {
                                   if (widget.canFocus(pce)) {
                                     setState(() {
                                       focus = pnt;
+                                      _setPoints();
                                     });
                                   }
                                 }
@@ -282,6 +325,7 @@ class _BoardState extends State<BoardWidget> {
                                   widget.move(focus, pnt);
 
                                   setState(() {
+                                    _points.clear();
                                     focus = null;
                                   });
                                 };
@@ -293,6 +337,7 @@ class _BoardState extends State<BoardWidget> {
                                   if (ecp.num == pce.num) {
                                     setState(() {
                                       focus = pnt;
+                                      _setPoints();
                                     });
                                   } else {
                                     // allow killing of enemy
@@ -304,19 +349,66 @@ class _BoardState extends State<BoardWidget> {
                               }
                             }
                           },
-                          child: Container(
-                            color: (focus != null && pnt.equal(focus))
-                                ? Theme.of(context).primaryColor
-                                : getBackground(pnt),
-                            child: Stack(
-                              children: <Widget>[
-                                if (pce != null)
-                                  Image.asset(
-                                    pce.filename(),
-                                  ),
-                              ],
-                            ),
-                          ));
+                          child: LayoutBuilder(
+                              builder: (BuildContext context,
+                                      BoxConstraints constraints) =>
+                                  Container(
+                                    color: (focus != null && pnt.equal(focus))
+                                        ? Theme.of(context).primaryColor
+                                        : getBackground(pnt),
+                                    child: Stack(
+                                      children: <Widget>[
+                                        if (oriy == 0)
+                                          Container(
+                                            child: Text(
+                                              "${(widget.reverse ? 8 - orix : orix + 1).abs()}",
+                                              style: TextStyle(
+                                                fontSize: constraints.maxWidth /
+                                                    indexSizeDivider,
+                                              ),
+                                            ),
+                                            padding: EdgeInsets.only(
+                                                left: indexPadding),
+                                          ),
+                                        if (orix == 7)
+                                          Align(
+                                            alignment:
+                                                FractionalOffset.bottomRight,
+                                            child: Container(
+                                              child: Text(
+                                                "${numToString((!widget.reverse ? 8 - oriy : oriy + 1).abs())}",
+                                                style: TextStyle(
+                                                  fontSize:
+                                                      constraints.maxWidth /
+                                                          indexSizeDivider,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (pce != null)
+                                          Center(
+                                            child: Image.asset(
+                                              pce.filename(),
+                                              width: constraints.maxWidth - 10,
+                                              height:
+                                                  constraints.maxHeight - 10,
+                                            ),
+                                          ),
+                                        if (_points.exists(pnt))
+                                          Center(
+                                              child: Container(
+                                            width: constraints.maxWidth / 2,
+                                            height: constraints.maxHeight / 2,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context)
+                                                  .primaryColor
+                                                  .withOpacity(0.54),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          )),
+                                      ],
+                                    ),
+                                  )));
                     },
                   ),
                 ))));
@@ -329,9 +421,10 @@ class BoardWidget extends StatefulWidget {
   final bool Function() ourTurn;
   final bool Function(Piece) canFocus; // disallow selecting enemy pieces
   final bool reverse;
+  final Future<List<Point>> Function(Point) possib;
 
   BoardWidget(this.board, this.move, this.ourTurn, this.canFocus,
-      {Key key, this.reverse = false})
+      {Key key, this.reverse = false, this.possib})
       : super(key: key);
 
   @override
