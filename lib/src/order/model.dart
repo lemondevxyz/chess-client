@@ -116,7 +116,7 @@ class Promote extends EventArgs {
 
   Promote.fromJson(Map<String, dynamic> json)
       : type = json["type"] as int,
-        src = json["src"] as Point;
+        src = Point.fromJson(json["src"]);
 
   Map<String, dynamic> toJson() => {
         "type": type,
@@ -124,8 +124,13 @@ class Promote extends EventArgs {
       };
 }
 
-// TODO: implement this
-class Pause {}
+// Castling is the same as move, so it's useless to re-define the class
+// [O]
+/*
+class Castling extends Move {
+  Castling(Point src, Point dst) : super(src, dst);
+}
+*/
 
 class Message {
   final String message;
@@ -142,10 +147,10 @@ class Message {
 class Done {
   final int result;
 
-  bool get lost => result == -1;
-  bool get draw => result == 0;
-  bool get stalemate => draw;
-  bool get won => result == 1;
+  bool get isLost => result == -1;
+  //bool get isDraw => result == 0;
+  bool get isStalemate => result == 0;
+  bool get isWon => result == 1;
 
   const Done(this.result);
 

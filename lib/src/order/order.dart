@@ -12,7 +12,7 @@ enum OrderID {
   Turn, // [U]
   Promote, // [C]
   Promotion, // [U]
-  Pause, // [O]
+  Castling, // [O]
   Message, // [O]
   Done, // [U]
 }

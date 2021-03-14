@@ -54,8 +54,8 @@ class Board with ChangeNotifier {
       PieceKind.rook,
       PieceKind.knight,
       PieceKind.bishop,
-      PieceKind.king,
       PieceKind.queen,
+      PieceKind.king,
       PieceKind.bishop,
       PieceKind.knight,
       PieceKind.rook,
@@ -67,7 +67,7 @@ class Board with ChangeNotifier {
 
     for (var i = 0; i < 2; i++) {
       int x = i;
-      int num = 1;
+      int num = 2;
       if (i == 1) {
         alt1 = [];
         alt1.addAll(alt2);
@@ -75,7 +75,7 @@ class Board with ChangeNotifier {
         alt2 = List<int>.filled(8, PieceKind.pawnf);
 
         x += 5;
-        num++;
+        num--;
       }
 
       for (var y = 0; y < 8; y++) {
@@ -335,15 +335,23 @@ class _BoardState extends State<BoardWidget> {
                                   // well if we select an ally
                                   // then shift focus to that piece
                                   if (ecp.num == pce.num) {
-                                    setState(() {
-                                      focus = pnt;
-                                      _setPoints();
-                                    });
+                                    if ((pce.t == PieceKind.king &&
+                                            ecp.t == PieceKind.rook) ||
+                                        (pce.t == PieceKind.rook &&
+                                            ecp.t == PieceKind.king)) {
+                                      doMovement();
+                                    } else {
+                                      setState(() {
+                                        focus = pnt;
+                                        _setPoints();
+                                      });
+                                    }
                                   } else {
-                                    // allow killing of enemy
+                                    // if it's an enemy then sure do the move
                                     doMovement();
                                   }
                                 } else {
+                                  // movement to an empty square
                                   doMovement();
                                 }
                               }
@@ -359,9 +367,11 @@ class _BoardState extends State<BoardWidget> {
                                     child: Stack(
                                       children: <Widget>[
                                         if (oriy == 0)
+                                          // number of square, 1 through 8
+                                          // drawn horizontally
                                           Container(
                                             child: Text(
-                                              "${(widget.reverse ? 8 - orix : orix + 1).abs()}",
+                                              "${(!widget.reverse ? 8 - orix : orix + 1).abs()}",
                                               style: TextStyle(
                                                 fontSize: constraints.maxWidth /
                                                     indexSizeDivider,
@@ -371,12 +381,14 @@ class _BoardState extends State<BoardWidget> {
                                                 left: indexPadding),
                                           ),
                                         if (orix == 7)
+                                          // letter of square, a through h
+                                          // drawn vertically
                                           Align(
                                             alignment:
                                                 FractionalOffset.bottomRight,
                                             child: Container(
                                               child: Text(
-                                                "${numToString((!widget.reverse ? 8 - oriy : oriy + 1).abs())}",
+                                                "${numToString((widget.reverse ? 8 - oriy : oriy + 1).abs())}",
                                                 style: TextStyle(
                                                   fontSize:
                                                       constraints.maxWidth /

@@ -180,10 +180,6 @@ class Server {
     return this.postRequest(Server.routes["cmd"], json);
   }
 
-  Future<void> cmdPiece(Point src, Point dst) async {
-    return sendCommand(Order(OrderID.Move, Move(src, dst)));
-  }
-
   Future<List<Point>> possib(Point src) async {
     final c = Completer<List<Point>>();
     postRequest(Server.routes["possib"], jsonEncode(Possible(src, null)))
@@ -203,6 +199,25 @@ class Server {
     });
 
     return c.future;
+  }
+
+  Future<void> promote(Point src, int type) async {
+    if (!inGame) {
+      return Future.error("not in game");
+    }
+
+    if (player != playerTurn) {
+      return Future.error("not your turn");
+    }
+
+    if (src == null || !src.valid()) {
+      return Future.error("parameters are invalid");
+    }
+
+    return this.sendCommand(Order(
+      OrderID.Promote,
+      Promote(type, src),
+    ));
   }
 
   Future<void> move(Point src, Point dst) async {
@@ -343,6 +358,7 @@ class Server {
               try {
                 final promote = Promote.fromJson(o.obj);
                 onPromote.broadcast(promote);
+                print("we can promote bro");
               } catch (e) {
                 print("listen.promote: $e");
               }
@@ -352,9 +368,51 @@ class Server {
                 final promotion = Promotion.fromJson(o.obj);
 
                 final pec = board.get(promotion.dst);
-                board.set(Piece(pec.pos, promotion.type, pec.t));
+                if (pec == null) {
+                  print(
+                      "listen.promotion: null piece, something wrong with the synchrozation");
+                  return;
+                }
+
+                board.set(Piece(pec.pos, promotion.type, pec.num));
               } catch (e) {
                 print("listen.promotion: $e");
+              }
+              break;
+            case OrderID.Castling:
+              try {
+                final move = Move.fromJson(o.obj);
+
+                int rooky;
+                int kingy;
+                if (move.src.y == 0 || move.dst.y == 0) {
+                  rooky = 3;
+                  kingy = 2;
+                } else if (move.src.y == 7 || move.dst.y == 7) {
+                  rooky = 5;
+                  kingy = 6;
+                } else {
+                  print("listen.castling: hmm wrong format $move");
+                }
+
+                if (rooky != 0 && kingy != 0) {
+                  final pec = board.get(move.src);
+                  if (pec == null) {
+                    print(
+                        "listen.castling: null castling, something wrong with the synchrozation");
+                    return;
+                  }
+
+                  board.set(Piece(move.src, PieceKind.empty, 0));
+                  board.set(Piece(move.dst, PieceKind.empty, 0));
+
+                  board.set(
+                      Piece(Point(move.src.x, rooky), PieceKind.rook, pec.num));
+                  board.set(
+                      Piece(Point(move.src.x, kingy), PieceKind.king, pec.num));
+                }
+              } catch (e) {
+                print("listen.castling: $e");
               }
               break;
             case OrderID.Turn:

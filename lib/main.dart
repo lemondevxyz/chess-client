@@ -57,7 +57,6 @@ class App extends StatelessWidget {
         focusColor: Colors.deepPurple[200],
         fontFamily: "Dubai",
       ),
-      /*
       routes: <String, WidgetBuilder>{
         "offline": ((context) => OfflineRoute()),
         "hub": ((context) => HubRoute()),
@@ -65,7 +64,6 @@ class App extends StatelessWidget {
       },
       initialRoute: initialRoute,
       navigatorKey: _navigator,
-      */
       home: GameRoute(),
     );
   }
