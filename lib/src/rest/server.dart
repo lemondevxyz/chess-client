@@ -96,6 +96,7 @@ class Server {
   final onDisconnect = Event(); // on websocket disconnection
   final onInvite = Event(); // on invite, whenever the player receives an invite
   final onGame = Event(); // on game, whenever a game starts
+  final onDone = Event<Done>(); // whenever a game finishes
   final onTurn = Event(); // when the turn changes
   final onPromote = Event<Promote>();
 
@@ -443,7 +444,7 @@ class Server {
       });
 
       ws.done.then((_) {
-        print("websocket done ${ws.closeCode}, ${ws.closeReason}");
+        //print("websocket done ${ws.closeCode}, ${ws.closeReason}");
         this.onDisconnect.broadcast();
         this._clean();
       });
@@ -478,6 +479,7 @@ class Server {
   }
 
   void _doneReceiver(Done d) {
+    onDone.broadcast(d);
     this._game = null;
   }
 

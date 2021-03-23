@@ -1,6 +1,7 @@
-import 'package:chess_client/main.dart';
 import 'package:flutter/material.dart';
 import 'global.dart' as global;
+
+const notificationDuration = Duration(seconds: 3);
 
 class HubRoute extends StatefulWidget {
   final String title = "Hub";

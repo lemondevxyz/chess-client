@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
+import 'package:chess_client/src/board/widget.dart';
 import 'package:chess_client/src/order/model.dart';
-import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'global.dart' as global;
@@ -20,18 +20,42 @@ class _GameState extends State<GameRoute> {
   Board brd = Board();
   final testing = global.debug == global.Debugging.game;
   bool _reverse = false;
+  bool _isFinished = true;
   Point _promote;
+  Object redrawObject;
+
+  onPromote(Promote pro) {
+    setState(() {
+      _promote = pro.src;
+    });
+  }
+
+  onDone(_) {
+    brd = global.server.board.duplicate();
+    _isFinished = true;
+
+    setState(() {
+      redrawObject = Object();
+    });
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+
+    try {
+      global.server.onPromote.unsubscribe(onPromote);
+      global.server.onDone.unsubscribe(onDone);
+    } catch (e) {}
+  }
 
   @override
   initState() {
     super.initState();
     if (!testing) {
       _reverse = (global.server.player == 1 ? false : true);
-      global.server.onPromote.subscribe((Promote pro) {
-        setState(() {
-          _promote = pro.src;
-        });
-      });
+      global.server.onPromote.subscribe(onPromote);
+      global.server.onDone.subscribe(onDone);
     }
 
     _board().addListener(() {
@@ -43,7 +67,11 @@ class _GameState extends State<GameRoute> {
     if (testing) {
       return brd;
     } else {
-      return global.server.board;
+      if (!_isFinished) {
+        return global.server.board;
+      } else {
+        return brd;
+      }
     }
   }
 
@@ -122,6 +150,7 @@ class _GameState extends State<GameRoute> {
                     _canFocus(),
                     reverse: _reverse,
                     possib: !testing ? global.server.possib : null,
+                    key: ValueKey<Object>(redrawObject),
                   ),
                   if (_promote != null && !testing)
                     Positioned.fill(

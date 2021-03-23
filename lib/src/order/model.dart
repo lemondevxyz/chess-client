@@ -144,7 +144,7 @@ class Message {
       };
 }
 
-class Done {
+class Done extends EventArgs {
   final int result;
 
   bool get isLost => result == -1;
@@ -152,7 +152,7 @@ class Done {
   bool get isStalemate => result == 0;
   bool get isWon => result == 1;
 
-  const Done(this.result);
+  Done(this.result);
 
   Done.fromJson(Map<String, dynamic> json) : result = json["result"];
 

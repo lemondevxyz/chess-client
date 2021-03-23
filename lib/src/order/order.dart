@@ -13,6 +13,7 @@ enum OrderID {
   Promote, // [C]
   Promotion, // [U]
   Castling, // [O]
+  Checkmate, // [U]
   Message, // [O]
   Done, // [U]
 }

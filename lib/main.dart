@@ -1,48 +1,127 @@
 import 'package:chess_client/game.dart';
 import 'package:chess_client/hub.dart';
+import 'package:chess_client/src/order/model.dart';
 import 'package:flutter/material.dart';
 import 'global.dart' as global;
-
-const notificationDuration = Duration(seconds: 3);
 
 void main() {
   runApp(App());
 }
 
-class App extends StatelessWidget {
-  App() {
+class App extends StatefulWidget {
+  @override
+  _AppState createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  GlobalKey<NavigatorState> _navigator;
+
+  void goToHub() {
+    if (_navigator != null && _navigator.currentState != null)
+      _navigator.currentState.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (BuildContext ctx) => HubRoute()),
+          (_) => false);
+  }
+
+  void goToGame() {
+    if (_navigator != null && _navigator.currentState != null)
+      _navigator.currentState.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (BuildContext ctx) => GameRoute()),
+          (_) => false);
+  }
+
+  void goToOffline() {
+    if (_navigator != null && _navigator.currentState != null)
+      _navigator.currentState.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (BuildContext ctx) => OfflineRoute()),
+          (_) => false);
+  }
+
+  @override
+  initState() {
     if (global.debug == global.Debugging.none) {
       global.server.connect();
     }
+
+    try {
+      global.server.onConnect.unsubscribe(onConnect);
+      global.server.onDisconnect.unsubscribe(onDisconnect);
+      global.server.onGame.unsubscribe(onGame);
+      global.server.onDone.unsubscribe(onDone);
+    } catch (e) {}
+
+    global.server.onConnect.subscribe(onConnect);
+    global.server.onDisconnect.subscribe(onDisconnect);
+    global.server.onGame.subscribe(onGame);
+    global.server.onDone.subscribe(onDone);
+
+    super.initState();
+  }
+
+  void onConnect(_) => goToHub();
+  void onDisconnect(_) => goToOffline();
+  void onGame(_) => goToGame();
+
+  void onDone(Done d) {
+    print("dialog ondone");
+
+    String text;
+    if (d.isWon) {
+      text = "You won";
+    } else if (d.isLost) {
+      text = "You lost";
+    } else if (d.isStalemate) {
+      text = "Draw";
+    }
+
+    showDialog(
+        context: _navigator.currentContext,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(text),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text(
+                      "The game ended. Would you like to stay or go back to the hub?"),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text("leave"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (_navigator != null) {
+                    goToHub();
+                  }
+                },
+              ),
+              TextButton(
+                child: Text("stay"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
   }
 
   @override
   Widget build(BuildContext context) {
-    final GlobalKey<NavigatorState> _navigator = GlobalKey<NavigatorState>();
+    _navigator = GlobalKey<NavigatorState>();
 
-    String initialRoute = "offline";
     switch (global.debug) {
       case global.Debugging.none:
         {
-          global.server.onConnect.subscribe((_) {
-            if (_navigator != null) _navigator.currentState.pushNamed("hub");
-          });
+          //onDisconnect(null);
 
-          global.server.onDisconnect.subscribe((_) {
-            if (_navigator != null)
-              _navigator.currentState.pushNamed("offline");
-          });
-
-          global.server.onGame.subscribe((_) {
-            if (_navigator != null) _navigator.currentState.pushNamed("game");
-          });
+          global.server.onDone.subscribe((Done d) {});
 
           break;
         }
       case global.Debugging.game:
-        if (global.debug == global.Debugging.game) {
-          initialRoute = "game";
-        }
         break;
     }
 
@@ -57,14 +136,12 @@ class App extends StatelessWidget {
         focusColor: Colors.deepPurple[200],
         fontFamily: "Dubai",
       ),
-      routes: <String, WidgetBuilder>{
-        "offline": ((context) => OfflineRoute()),
-        "hub": ((context) => HubRoute()),
-        "game": ((context) => GameRoute()),
+      onGenerateRoute: (RouteSettings settings) {
+        return MaterialPageRoute(builder: (BuildContext ctx) {
+          return OfflineRoute();
+        });
       },
-      initialRoute: initialRoute,
       navigatorKey: _navigator,
-      home: GameRoute(),
     );
   }
 }
