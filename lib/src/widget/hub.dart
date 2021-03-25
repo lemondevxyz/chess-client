@@ -1,34 +1,46 @@
+import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
-import 'global.dart' as global;
 
 const notificationDuration = Duration(seconds: 3);
 
+abstract class _HubService
+    implements
+        rest.InviteService,
+        rest.SubscribeService,
+        rest.WebsocketService {}
+
 class HubRoute extends StatefulWidget {
   final String title = "Hub";
+  final _HubService service;
+
+  const HubRoute(this.service);
 
   @override
   _HubRouteState createState() => _HubRouteState();
 }
 
 class _HubRouteState extends State<HubRoute> {
+  onInvite(dynamic) {
+    if (widget.service.invites.length > 0) {
+      setState(() {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text("Received new invite"),
+            duration: notificationDuration));
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    global.server.onInvite.subscribe((_) {
-      if (global.server.invites.length > 0) {
-        setState(() {
-          ScaffoldMessenger.of(context).removeCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text("Received new invite"),
-              duration: notificationDuration));
-        });
-      }
-    });
+    widget.service.subscribe(OrderID.Invite, onInvite);
 
     handleClick(String name) {
       switch (name) {
         case "Invite":
           {
-            global.server.getAvaliableUsers().then((List<String> l) {
+            widget.service.getAvaliableUsers().then((List<String> l) {
               showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -43,7 +55,7 @@ class _HubRouteState extends State<HubRoute> {
                               ListTile(
                                 title: Text("$str"),
                                 onTap: () {
-                                  global.server.invite(str);
+                                  widget.service.invite(str);
                                 },
                               ),
                           ],
@@ -58,7 +70,6 @@ class _HubRouteState extends State<HubRoute> {
             break;
           }
         case "Disconnect":
-          global.server.disconnect();
           break;
       }
     }
@@ -84,11 +95,11 @@ class _HubRouteState extends State<HubRoute> {
       body: Center(
         child: ListView(
           children: <Widget>[
-            for (var i in global.server.invites)
+            for (var i in widget.service.invites)
               ListTile(
                 title: Text("${i.id}"),
                 onTap: () {
-                  global.server.acceptInvite(i.id);
+                  widget.service.acceptInvite(i.id);
                 },
               ),
           ],

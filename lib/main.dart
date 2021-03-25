@@ -1,8 +1,8 @@
-import 'package:chess_client/game.dart';
-import 'package:chess_client/hub.dart';
 import 'package:chess_client/src/order/model.dart';
 import 'package:flutter/material.dart';
 import 'global.dart' as global;
+import 'package:chess_client/src/widget/game.dart' as route;
+import 'package:chess_client/src/widget/hub.dart' as route;
 
 void main() {
   runApp(App());
@@ -19,14 +19,14 @@ class _AppState extends State<App> {
   void goToHub() {
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (BuildContext ctx) => HubRoute()),
+          MaterialPageRoute(builder: (BuildContext ctx) => route.HubRoute()),
           (_) => false);
   }
 
   void goToGame() {
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (BuildContext ctx) => GameRoute()),
+          MaterialPageRoute(builder: (BuildContext ctx) => route.GameRoute()),
           (_) => false);
   }
 

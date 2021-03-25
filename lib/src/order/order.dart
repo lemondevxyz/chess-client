@@ -16,6 +16,7 @@ enum OrderID {
   Checkmate, // [U]
   Message, // [O]
   Done, // [U]
+  Disconnect, // Not actually an order, but more so to inform other components that the connection has been closed
 }
 
 class Order extends EventArgs {

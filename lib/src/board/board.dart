@@ -1,10 +1,17 @@
 import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
+import 'package:chess_client/src/order/model.dart';
 import 'package:flutter/material.dart';
 
 class Board with ChangeNotifier {
   static const int max = 8;
   var _data = List<List<Piece>>.empty(growable: true);
+
+  // this is a list of all moves done by the both player
+  final moveList = <Move>[];
+  // this represents the last move we reverted to
+  // if equal to len(moveList) means it hasn't been modified
+  int lastMove = -1;
 
   Board.fromJson(List<dynamic> json) {
     for (var i = 0; i < max; i++) {
@@ -218,12 +225,42 @@ class Board with ChangeNotifier {
         return false;
       }
 
+      final src = p.pos;
       this._data[p.pos.x][p.pos.y] = null;
 
       p.pos = dst;
+
+      this.moveList.add(Move(src, dst));
+
       this.set(p);
     }
 
     return ok;
+  }
+
+  bool canRevertMove() {
+    if (lastMove <= 0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void revertMove() {
+    if (!canRevertMove()) {
+      return;
+    }
+
+    lastMove--;
+
+    final previousMove = moveList[lastMove];
+
+    final dst = previousMove.dst;
+    final pec = get(dst);
+
+    this._data[dst.x][dst.y] = null;
+
+    pec.pos = previousMove.src;
+    set(pec);
   }
 }
