@@ -19,8 +19,7 @@ class Promotion extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              print("${constraints.minWidth} ${constraints.minHeight}");
-              print("${constraints.maxWidth} ${constraints.maxHeight}");
+              //print("${constraints.minWidth} ${constraints.minHeight}");
               return Container(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

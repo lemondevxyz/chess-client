@@ -225,12 +225,12 @@ class Board with ChangeNotifier {
         return false;
       }
 
-      final src = p.pos;
+      //final src = p.pos;
       this._data[p.pos.x][p.pos.y] = null;
 
       p.pos = dst;
 
-      this.moveList.add(Move(src, dst));
+      //this.moveList.add(Move(src, dst));
 
       this.set(p);
     }

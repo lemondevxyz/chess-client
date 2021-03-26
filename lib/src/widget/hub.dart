@@ -4,15 +4,9 @@ import 'package:flutter/material.dart';
 
 const notificationDuration = Duration(seconds: 3);
 
-abstract class _HubService
-    implements
-        rest.InviteService,
-        rest.SubscribeService,
-        rest.WebsocketService {}
-
 class HubRoute extends StatefulWidget {
   final String title = "Hub";
-  final _HubService service;
+  final rest.HubService service;
 
   const HubRoute(this.service);
 
@@ -34,6 +28,7 @@ class _HubRouteState extends State<HubRoute> {
 
   @override
   Widget build(BuildContext context) {
+    widget.service.unsubscribe(OrderID.Invite);
     widget.service.subscribe(OrderID.Invite, onInvite);
 
     handleClick(String name) {
@@ -70,6 +65,7 @@ class _HubRouteState extends State<HubRoute> {
             break;
           }
         case "Disconnect":
+          widget.service.disconnect();
           break;
       }
     }

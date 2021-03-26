@@ -5,6 +5,7 @@ import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/model.dart';
 import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/conf.dart';
+import 'package:chess_client/src/rest/interface.dart';
 import 'package:chess_client/src/board/generator.dart';
 import "package:http/http.dart" as http;
 import "dart:convert";
@@ -14,37 +15,8 @@ final defaultServConf =
     ServerConf(false, "localhost", 8080, Duration(seconds: 20));
 
 // Server is a definition of the server we communicate with.
-class Server {
+class Server implements ServerService {
   final ServerConf conf;
-
-  Credentials _credentials;
-
-  String get publicId => _credentials.publicId;
-
-  static const reconnectDuration = Duration(seconds: 30);
-  static const routes = {
-    // where to send cmd requests
-    "cmd": "/cmd",
-    // where to send invite request
-    "invite": "/invite",
-    // where to accept invite requests
-    "accept": "/accept",
-    // where to upgrade http connection to websocket
-    "ws": "/ws",
-    // where to send requests to test authorization.
-    "protect": "/protect",
-    // where to get users that want to play
-    "avali": "/avali",
-    // where to get avaliable moves
-    "possib": "/possib",
-  };
-
-  final Map<String, String> _headers = {
-    'Content-type': 'application/json',
-    'Accept': 'application/json',
-  };
-
-  WebSocket _socket;
 
   // InviteService
   final _invites = List<Invite>.empty(growable: true);
@@ -114,7 +86,7 @@ class Server {
   }
 
   void unsubscribe(OrderID id) {
-    if (!_event.containsKey(id)) throw "no subscription attached to this id";
+    if (!_event.containsKey(id)) return;
 
     _event.remove(id);
   }
@@ -129,73 +101,13 @@ class Server {
     _event[id](value);
   }
 
-  // lock for invite system;
+  // BoardSystem
   int _playerTurn;
   Game _game;
-
   int get playerTurn => _playerTurn;
   bool get inGame => _game != null;
   int get player => inGame ? _game.player : 0;
   Board get board => inGame ? _game.board : null;
-
-  Future<String> _getRequest(String route) async {
-    if (!isConnected()) {
-      return Future.error("socket is null");
-    }
-
-    final c = Completer<String>();
-    final String url = conf.http(route);
-
-    try {
-      http.get(url, headers: _headers).then((r) {
-        if (r.statusCode != 200) {
-          c.completeError("${r.body}");
-        } else {
-          c.complete(r.body);
-        }
-      }).catchError((e) {
-        c.completeError(e);
-      });
-    } catch (e) {
-      c.completeError(e);
-    }
-
-    return c.future;
-  }
-
-  Future<String> _postRequest(String route, String data) async {
-    if (!isConnected()) {
-      return Future.error("socket is null");
-    }
-
-    final c = Completer<String>();
-    final String url = conf.http(route);
-
-    try {
-      http.post(url, body: data, headers: _headers).then((r) {
-        if (r.statusCode != 200) {
-          c.completeError("${r.body}");
-        } else {
-          c.complete(r.body);
-        }
-      });
-    } catch (e) {
-      c.completeError(e);
-    }
-
-    return c.future;
-  }
-
-  Future<void> sendCommand(Order cmd) async {
-    String json = "";
-    try {
-      json = jsonEncode(cmd);
-    } catch (e) {
-      return Future.error(e);
-    }
-
-    return _postRequest(Server.routes["cmd"], json);
-  }
 
   Future<List<Point>> possib(Point src) async {
     final c = Completer<List<Point>>();
@@ -231,7 +143,7 @@ class Server {
       return Future.error("parameters are invalid");
     }
 
-    return sendCommand(Order(
+    return _sendCommand(Order(
       OrderID.Promote,
       Promote(type, src),
     ));
@@ -250,11 +162,24 @@ class Server {
       return Future.error("parameters are invalid");
     }
 
-    return sendCommand(Order(
+    return _sendCommand(Order(
       OrderID.Move,
       Move(src, dst),
     ));
   }
+
+  bool ourTurn() {
+    if (!inGame) {
+      throw "not in game";
+    }
+
+    return playerTurn == _game.player;
+  }
+
+  // WebsocketService
+  Credentials _credentials;
+  String get publicId => _credentials.publicId;
+  WebSocket _socket;
 
   bool isConnected() {
     if (_socket != null) {
@@ -264,27 +189,12 @@ class Server {
     return false;
   }
 
-  void _clean() async {
-    _game = null;
-    _headers.remove("Authorization");
-    _socket = null;
-    cleanInvite();
-  }
-
   Future<void> disconnect() async {
     if (isConnected()) {
       _socket.close(WebSocketStatus.normalClosure);
     } else {
       return Future.error("not connected");
     }
-  }
-
-  bool ourTurn() {
-    if (!inGame) {
-      throw "not in game";
-    }
-
-    return playerTurn == _game.player;
   }
 
   Future<void> connect() async {
@@ -328,6 +238,7 @@ class Server {
 
                 final pec = board.get(move.src);
                 pec.pos = move.dst;
+
                 board.set(Piece(move.src, PieceKind.empty, 0));
                 board.set(pec);
               } catch (e) {
@@ -438,6 +349,96 @@ class Server {
     });
 
     return c.future;
+  }
+
+  // internal
+  static const reconnectDuration = Duration(seconds: 30);
+  static const routes = {
+    // where to send cmd requests
+    "cmd": "/cmd",
+    // where to send invite request
+    "invite": "/invite",
+    // where to accept invite requests
+    "accept": "/accept",
+    // where to upgrade http connection to websocket
+    "ws": "/ws",
+    // where to send requests to test authorization.
+    "protect": "/protect",
+    // where to get users that want to play
+    "avali": "/avali",
+    // where to get avaliable moves
+    "possib": "/possib",
+  };
+
+  final Map<String, String> _headers = {
+    'Content-type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  Future<String> _getRequest(String route) async {
+    if (!isConnected()) {
+      return Future.error("socket is null");
+    }
+
+    final c = Completer<String>();
+    final String url = conf.http(route);
+
+    try {
+      http.get(url, headers: _headers).then((r) {
+        if (r.statusCode != 200) {
+          c.completeError("${r.body}");
+        } else {
+          c.complete(r.body);
+        }
+      }).catchError((e) {
+        c.completeError(e);
+      });
+    } catch (e) {
+      c.completeError(e);
+    }
+
+    return c.future;
+  }
+
+  Future<String> _postRequest(String route, String data) async {
+    if (!isConnected()) {
+      return Future.error("socket is null");
+    }
+
+    final c = Completer<String>();
+    final String url = conf.http(route);
+
+    try {
+      http.post(url, body: data, headers: _headers).then((r) {
+        if (r.statusCode != 200) {
+          c.completeError("${r.body}");
+        } else {
+          c.complete(r.body);
+        }
+      });
+    } catch (e) {
+      c.completeError(e);
+    }
+
+    return c.future;
+  }
+
+  Future<void> _sendCommand(Order cmd) async {
+    String json = "";
+    try {
+      json = jsonEncode(cmd);
+    } catch (e) {
+      return Future.error(e);
+    }
+
+    return _postRequest(Server.routes["cmd"], json);
+  }
+
+  void _clean() async {
+    _game = null;
+    _headers.remove("Authorization");
+    _socket = null;
+    cleanInvite();
   }
 
   void _inviteReceiver(Invite i) {

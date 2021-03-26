@@ -3,7 +3,7 @@ import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/model.dart';
 import 'package:chess_client/src/order/order.dart';
-import 'package:chess_client/src/rest/interface.dart';
+import 'package:chess_client/src/rest/interface.dart' as rest;
 // Our widgets
 import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/game/promotion.dart' as game;
@@ -11,13 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 //import 'global.dart' as global;
 
-abstract class _GameService
-    implements WebsocketService, SubscribeService, BoardService {}
-
 class GameRoute extends StatefulWidget {
   final title = "Game";
   final bool testing;
-  final _GameService service;
+  final rest.GameService service;
 
   const GameRoute(this.testing, this.service);
 
@@ -28,19 +25,30 @@ class GameRoute extends StatefulWidget {
 class _GameState extends State<GameRoute> {
   Board brd = Board();
   bool _reverse = false;
-  bool _isFinished = true;
+  bool _isFinished = false;
   Point _promote;
   Object redrawObject;
 
-  onPromote(Promote pro) {
+  onPromote(dynamic parameter) {
+    if (!(parameter is Promote)) {
+      print("promote has bad struct");
+      return;
+    }
+
+    final p = parameter as Promote;
+
     setState(() {
-      _promote = pro.src;
+      _promote = p.src;
     });
   }
 
   onDone(_) {
+    widget.service.board.removeListener(onTurn);
+
     brd = widget.service.board.duplicate();
     _isFinished = true;
+
+    brd.addListener(onTurn);
 
     setState(() {
       redrawObject = Object();
@@ -49,27 +57,26 @@ class _GameState extends State<GameRoute> {
 
   @override
   dispose() {
-    super.dispose();
+    _board().removeListener(onTurn);
 
-    if (widget.service.isSubscribed(OrderID.Promote))
-      widget.service.unsubscribe(OrderID.Promote);
-    if (widget.service.isSubscribed(OrderID.Done))
-      widget.service.unsubscribe(OrderID.Done);
+    super.dispose();
   }
 
   @override
   initState() {
-    super.initState();
     if (!widget.testing) {
       _reverse = (widget.service.player == 1 ? false : true);
 
+      widget.service.unsubscribe(OrderID.Promote);
       widget.service.subscribe(OrderID.Promote, onPromote);
+      widget.service.unsubscribe(OrderID.Done);
       widget.service.subscribe(OrderID.Done, onDone);
     }
 
-    _board().addListener(() {
-      setState(() {});
-    });
+    _board().removeListener(onTurn);
+    _board().addListener(onTurn);
+
+    super.initState();
   }
 
   Board _board() {
@@ -118,6 +125,10 @@ class _GameState extends State<GameRoute> {
         return pce.num == widget.service.player;
       };
     }
+  }
+
+  onTurn() {
+    setState(() {});
   }
 
   @override

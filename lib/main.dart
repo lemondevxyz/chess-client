@@ -1,8 +1,17 @@
 import 'package:chess_client/src/order/model.dart';
+import 'package:chess_client/src/order/order.dart';
 import 'package:flutter/material.dart';
-import 'global.dart' as global;
-import 'package:chess_client/src/widget/game.dart' as route;
-import 'package:chess_client/src/widget/hub.dart' as route;
+import 'package:chess_client/src/widget/game.dart' as widget;
+import 'package:chess_client/src/widget/hub.dart' as widget;
+import 'package:chess_client/src/rest/server.dart' as rest;
+
+class Debugging {
+  static const none = 0;
+  static const game = 1;
+}
+
+final server = rest.Server(rest.defaultServConf);
+const debug = Debugging.none;
 
 void main() {
   runApp(App());
@@ -19,14 +28,17 @@ class _AppState extends State<App> {
   void goToHub() {
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (BuildContext ctx) => route.HubRoute()),
+          MaterialPageRoute(
+              builder: (BuildContext ctx) => widget.HubRoute(server)),
           (_) => false);
   }
 
   void goToGame() {
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (BuildContext ctx) => route.GameRoute()),
+          MaterialPageRoute(
+              builder: (BuildContext ctx) =>
+                  widget.GameRoute(debug == Debugging.game, server)),
           (_) => false);
   }
 
@@ -38,32 +50,41 @@ class _AppState extends State<App> {
   }
 
   @override
+  dispose() {
+    super.dispose();
+  }
+
+  @override
   initState() {
-    if (global.debug == global.Debugging.none) {
-      global.server.connect();
+    switch (debug) {
+      case Debugging.none:
+        server.connect();
+        break;
     }
 
-    try {
-      global.server.onConnect.unsubscribe(onConnect);
-      global.server.onDisconnect.unsubscribe(onDisconnect);
-      global.server.onGame.unsubscribe(onGame);
-      global.server.onDone.unsubscribe(onDone);
-    } catch (e) {}
-
-    global.server.onConnect.subscribe(onConnect);
-    global.server.onDisconnect.subscribe(onDisconnect);
-    global.server.onGame.subscribe(onGame);
-    global.server.onDone.subscribe(onDone);
-
     super.initState();
+  }
+
+  _AppState() {
+    server.unsubscribe(OrderID.Credentials);
+    server.unsubscribe(OrderID.Disconnect);
+    server.unsubscribe(OrderID.Game);
+    server.unsubscribe(OrderID.Done);
+
+    server.subscribe(OrderID.Credentials, onConnect);
+    server.subscribe(OrderID.Disconnect, onDisconnect);
+    server.subscribe(OrderID.Game, onGame);
+    server.subscribe(OrderID.Done, onDone);
   }
 
   void onConnect(_) => goToHub();
   void onDisconnect(_) => goToOffline();
   void onGame(_) => goToGame();
 
-  void onDone(Done d) {
-    print("dialog ondone");
+  void onDone(dynamic parameter) {
+    if (!(dynamic is Done)) throw "bad parameter for done";
+
+    final d = parameter as Done;
 
     String text;
     if (d.isWon) {
@@ -112,19 +133,6 @@ class _AppState extends State<App> {
   Widget build(BuildContext context) {
     _navigator = GlobalKey<NavigatorState>();
 
-    switch (global.debug) {
-      case global.Debugging.none:
-        {
-          //onDisconnect(null);
-
-          global.server.onDone.subscribe((Done d) {});
-
-          break;
-        }
-      case global.Debugging.game:
-        break;
-    }
-
     return MaterialApp(
       title: 'Chess',
       theme: ThemeData(
@@ -138,6 +146,8 @@ class _AppState extends State<App> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         return MaterialPageRoute(builder: (BuildContext ctx) {
+          if (debug == Debugging.game) return widget.GameRoute(true, server);
+
           return OfflineRoute();
         });
       },
@@ -160,7 +170,7 @@ class OfflineRoute extends StatelessWidget {
         child: TextButton(
           child: Text("Connect"),
           onPressed: () {
-            global.server.connect();
+            server.connect();
           },
         ),
       ),
