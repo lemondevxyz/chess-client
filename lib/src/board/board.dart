@@ -293,6 +293,12 @@ class Board with ChangeNotifier implements rest.HistoryService {
     historyLast++;
   }
 
+  bool canResetHistory() {
+    if (historyLast == history.length) return false;
+
+    return true;
+  }
+
   void resetHistory() {
     for (var i = historyLast; i < history.length; i++) {
       final move = history[historyLast];

@@ -15,6 +15,7 @@ class Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final prev = service.canGoPrev();
     final next = service.canGoNext();
+    final reset = service.canResetHistory();
 
     IconData turnIcon;
     if (yourTurn)
@@ -46,12 +47,12 @@ class Header extends StatelessWidget {
             iconSize: Header.size,
             icon: Icon(
               Icons.chevron_left,
-              color: prev
+              color: prev && yourTurn
                   ? Theme.of(context).primaryColor
                   : Theme.of(context).disabledColor,
             ),
             onPressed: () {
-              if (prev) service.goPrev();
+              if (prev && yourTurn) service.goPrev();
             },
           ),
         ),
@@ -71,10 +72,12 @@ class Header extends StatelessWidget {
             iconSize: Header.size,
             icon: Icon(
               Icons.restore,
-              color: Theme.of(context).primaryColor,
+              color: reset && yourTurn
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).disabledColor,
             ),
             onPressed: () {
-              service.resetHistory();
+              if (reset && yourTurn) service.resetHistory();
             },
           ),
         ),
@@ -100,12 +103,12 @@ class Header extends StatelessWidget {
             iconSize: Header.size,
             icon: Icon(
               Icons.chevron_right,
-              color: next
+              color: next && yourTurn
                   ? Theme.of(context).primaryColor
                   : Theme.of(context).disabledColor,
             ),
             onPressed: () {
-              if (next) service.goNext();
+              if (next && yourTurn) service.goNext();
             },
           ),
         ),

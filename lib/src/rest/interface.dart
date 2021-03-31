@@ -36,10 +36,12 @@ abstract class BoardService {
 // this is meant for the Board
 abstract class HistoryService {
   bool canGoPrev();
-  bool canGoNext();
   void goPrev();
+
+  bool canGoNext();
   void goNext();
 
+  bool canResetHistory();
   void resetHistory();
 }
 
