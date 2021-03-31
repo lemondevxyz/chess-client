@@ -1,3 +1,4 @@
+// other dependecies
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
@@ -6,10 +7,11 @@ import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/interface.dart' as rest;
 // Our widgets
 import 'package:chess_client/src/widget/game/board.dart' as game;
+import 'package:chess_client/src/widget/game/header.dart' as game;
 import 'package:chess_client/src/widget/game/promotion.dart' as game;
+// flutter
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-//import 'global.dart' as global;
 
 class GameRoute extends StatefulWidget {
   final title = "Game";
@@ -142,24 +144,13 @@ class _GameState extends State<GameRoute> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text("Your Turn: ${_yourTurn() ? 'yes' : 'no'}"),
-            TextButton(
-              child: Text("reverse"),
-              onPressed: () {
+            Center(
+              child: game.Header(_board(), () {
                 setState(() {
                   _reverse = !_reverse;
                 });
-              },
+              }, _yourTurn()),
             ),
-            if (widget.testing)
-              TextButton(
-                child: Text("reset board"),
-                onPressed: (() {
-                  setState(() {
-                    brd = Board();
-                  });
-                }),
-              ),
             Expanded(
               child: Stack(
                 children: <Widget>[

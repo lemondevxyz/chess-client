@@ -1,17 +1,23 @@
 import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
-import 'package:chess_client/src/order/model.dart';
+import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
-class Board with ChangeNotifier {
+class HistoryItem {
+  final Piece src;
+  final Piece dst;
+
+  const HistoryItem(this.src, this.dst);
+}
+
+class Board with ChangeNotifier implements rest.HistoryService {
   static const int max = 8;
   var _data = List<List<Piece>>.empty(growable: true);
 
-  // this is a list of all moves done by the both player
-  final moveList = <Move>[];
-  // this represents the last move we reverted to
-  // if equal to len(moveList) means it hasn't been modified
-  int lastMove = -1;
+  // this is a list of all moves done by the both players
+  final history = <HistoryItem>[];
+  // this represents the last move we moved to
+  int historyLast = 0;
 
   Board.fromJson(List<dynamic> json) {
     for (var i = 0; i < max; i++) {
@@ -219,18 +225,22 @@ class Board with ChangeNotifier {
 
     bool ok = this.canGo(p, dst);
     if (ok) {
-      final o = this.get(dst);
+      Piece o = this.get(dst);
       // friendly fire not allowed !!!
       if (o != null && o.num == p.num) {
         return false;
       }
+      if (o == null) {
+        o = Piece(dst, PieceKind.empty, 0);
+      }
 
-      //final src = p.pos;
-      this._data[p.pos.x][p.pos.y] = null;
+      historyLast++;
+      this.history.add(HistoryItem(p.copy(), o.copy()));
+
+      final src = p.pos;
+      this._data[src.x][src.y] = null;
 
       p.pos = dst;
-
-      //this.moveList.add(Move(src, dst));
 
       this.set(p);
     }
@@ -238,29 +248,66 @@ class Board with ChangeNotifier {
     return ok;
   }
 
-  bool canRevertMove() {
-    if (lastMove <= 0) {
-      return false;
-    }
+  // canGoPrev basically goes back one move in the move history
+  bool canGoPrev() {
+    if (historyLast == 0) return false;
 
     return true;
   }
 
-  void revertMove() {
-    if (!canRevertMove()) {
-      return;
+  // goPrev goes back one move in the move history. safe on !canGoPrev
+  void goPrev() {
+    if (!this.canGoPrev()) return;
+
+    historyLast--;
+
+    final move = history[historyLast];
+    Piece pec = move.src.copy();
+    Piece cep = move.dst.copy();
+
+    if (cep != null) this.set(cep);
+    if (pec != null) this.set(pec);
+  }
+
+  // canGoNext determines if we can do the next move in the move history
+  bool canGoNext() {
+    if (historyLast >= (history.length)) return false;
+
+    return true;
+  }
+
+  // goNext does the next move in the move history. safe on !canGoNext
+  void goNext() {
+    if (!this.canGoNext()) return;
+
+    final move = history[historyLast];
+
+    final pec = move.src.copy();
+    final cep = move.dst.copy();
+
+    this.set(Piece(pec.pos, PieceKind.empty, 0));
+    pec.pos = cep.pos;
+
+    this.set(pec);
+
+    historyLast++;
+  }
+
+  void resetHistory() {
+    for (var i = historyLast; i < history.length; i++) {
+      final move = history[historyLast];
+
+      final pec = move.src.copy();
+      final cep = move.dst.copy();
+
+      this._data[pec.pos.x][pec.pos.y] = null;
+      pec.pos = cep.pos;
+
+      this._data[pec.pos.x][pec.pos.y] = pec;
+
+      historyLast++;
     }
 
-    lastMove--;
-
-    final previousMove = moveList[lastMove];
-
-    final dst = previousMove.dst;
-    final pec = get(dst);
-
-    this._data[dst.x][dst.y] = null;
-
-    pec.pos = previousMove.src;
-    set(pec);
+    notifyListeners();
   }
 }

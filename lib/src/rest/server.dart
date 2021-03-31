@@ -237,10 +237,7 @@ class Server implements ServerService {
                 final move = Move.fromJson(o.obj);
 
                 final pec = board.get(move.src);
-                pec.pos = move.dst;
-
-                board.set(Piece(move.src, PieceKind.empty, 0));
-                board.set(pec);
+                board.move(pec, move.dst);
               } catch (e) {
                 print("listen.move: $e");
               }

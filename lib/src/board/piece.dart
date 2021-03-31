@@ -37,6 +37,17 @@ class PieceKind {
     king: "k",
   };
 
+  static Map<int, String> names = {
+    empty: "empty",
+    pawnf: "pawn",
+    pawnb: "pawn",
+    bishop: "bishop",
+    knight: "knight",
+    rook: "rook",
+    queen: "queen",
+    king: "king",
+  };
+
   static Map<int, String> filenames = {
     empty: "",
     pawnf: "pawn.png",
@@ -49,7 +60,7 @@ class PieceKind {
   };
 
   String toString() {
-    return PieceKind.char[value];
+    return value == empty ? "" : PieceKind.names[value];
   }
 
   static String toShortString(int value) {
@@ -77,8 +88,8 @@ class Piece {
 
   Piece(this.pos, this.t, this.num);
 
-  String toString() {
-    return this.t.toString().split('.').last;
+  Piece copy() {
+    return Piece(this.pos, this.t, this.num);
   }
 
   String filename() {
@@ -155,4 +166,6 @@ class Piece {
 
     return ps;
   }
+
+  String toString() => "$pos/${PieceKind(t).toString()}/$num";
 }

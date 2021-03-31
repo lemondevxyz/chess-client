@@ -19,6 +19,8 @@ abstract class GameService
 abstract class HubService
     implements InviteService, SubscribeService, WebsocketService {}
 
+// this only implemented in the server
+// TODO: implement this in normal board
 abstract class BoardService {
   Board get board;
   int get player;
@@ -27,7 +29,18 @@ abstract class BoardService {
   Future<List<Point>> possib(Point src);
   Future<void> move(Point src, Point dst);
   Future<void> promote(Point src, int type);
+
   bool ourTurn();
+}
+
+// this is meant for the Board
+abstract class HistoryService {
+  bool canGoPrev();
+  bool canGoNext();
+  void goPrev();
+  void goNext();
+
+  void resetHistory();
 }
 
 abstract class InviteService {

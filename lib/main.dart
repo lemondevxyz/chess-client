@@ -11,7 +11,7 @@ class Debugging {
 }
 
 final server = rest.Server(rest.defaultServConf);
-const debug = Debugging.none;
+const debug = Debugging.game;
 
 void main() {
   runApp(App());
