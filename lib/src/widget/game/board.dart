@@ -69,10 +69,12 @@ class _BoardState extends State<BoardWidget> {
   @override
   Widget build(BuildContext context) {
     final brd = widget.board;
+    final height = MediaQuery.of(context).size.height - 150;
 
     return ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.height - 120,
+          maxWidth: height,
+          maxHeight: height,
         ),
         child: Container(
             color: Colors.white12,

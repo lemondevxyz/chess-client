@@ -1,14 +1,14 @@
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
-class Header extends StatelessWidget {
+class Controls extends StatelessWidget {
   static double size = 36.0;
 
   final Function() reverse;
   final rest.HistoryService service;
   final bool yourTurn;
 
-  const Header(this.service, this.reverse, this.yourTurn, {Key key})
+  const Controls(this.service, this.reverse, this.yourTurn, {Key key})
       : super(key: key);
 
   @override
@@ -36,15 +36,20 @@ class Header extends StatelessWidget {
       turnTooltip = "Not your turn";
 
     const around = Spacer(flex: 5);
-    const spacing = Spacer();
 
+    final size = MediaQuery.of(context).size.height / 16;
+
+    final spacing = SizedBox(
+      width: size,
+      height: size,
+    );
     return Row(
       children: <Widget>[
         around,
         Tooltip(
           message: "View previous move",
           child: IconButton(
-            iconSize: Header.size,
+            iconSize: size,
             icon: Icon(
               Icons.chevron_left,
               color: prev && yourTurn
@@ -62,14 +67,14 @@ class Header extends StatelessWidget {
           child: Icon(
             turnIcon,
             color: turnColor,
-            size: Header.size,
+            size: size,
           ),
         ),
         spacing,
         Tooltip(
           message: "Reset the board",
           child: IconButton(
-            iconSize: Header.size,
+            iconSize: size,
             icon: Icon(
               Icons.restore,
               color: reset && yourTurn
@@ -86,7 +91,7 @@ class Header extends StatelessWidget {
           Tooltip(
             message: "Reverse the board",
             child: IconButton(
-              iconSize: Header.size,
+              iconSize: size,
               icon: Icon(
                 Icons.swap_vert,
               ),
@@ -100,7 +105,7 @@ class Header extends StatelessWidget {
         Tooltip(
           message: "View next move",
           child: IconButton(
-            iconSize: Header.size,
+            iconSize: size,
             icon: Icon(
               Icons.chevron_right,
               color: next && yourTurn

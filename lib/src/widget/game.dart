@@ -7,7 +7,7 @@ import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/interface.dart' as rest;
 // Our widgets
 import 'package:chess_client/src/widget/game/board.dart' as game;
-import 'package:chess_client/src/widget/game/header.dart' as game;
+import 'package:chess_client/src/widget/game/controls.dart' as game;
 import 'package:chess_client/src/widget/game/promotion.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
@@ -142,43 +142,42 @@ class _GameState extends State<GameRoute> {
       ),
       body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Center(
-              child: game.Header(_board(), () {
+            Expanded(
+              child: game.Controls(_board(), () {
                 setState(() {
                   _reverse = !_reverse;
                 });
               }, _yourTurn()),
             ),
-            Expanded(
-              child: Stack(
-                children: <Widget>[
-                  game.BoardWidget(
-                    _board(),
-                    _move(),
-                    _yourTurn,
-                    _canFocus(),
-                    reverse: _reverse,
-                    possib: !widget.testing ? widget.service.possib : null,
-                    key: ValueKey<Object>(redrawObject),
-                  ),
-                  if (_promote != null && !widget.testing)
-                    game.Promotion(
-                      widget.service.player,
-                      (int type) {
-                        widget.service.promote(this._promote, type).then((_) {
-                          setState(() {
-                            this._promote = null;
-                          });
-                        }).catchError(() {
-                          print(
-                              "trying to promote: point: $_promote - type: $type");
+            Stack(
+              children: <Widget>[
+                game.BoardWidget(
+                  _board(),
+                  _move(),
+                  _yourTurn,
+                  _canFocus(),
+                  reverse: _reverse,
+                  possib: !widget.testing ? widget.service.possib : null,
+                  key: ValueKey<Object>(redrawObject),
+                ),
+                if (_promote != null && !widget.testing)
+                  game.Promotion(
+                    widget.service.player,
+                    (int type) {
+                      widget.service.promote(this._promote, type).then((_) {
+                        setState(() {
+                          this._promote = null;
                         });
-                      },
-                    )
-                ],
-              ),
+                      }).catchError(() {
+                        print(
+                            "trying to promote: point: $_promote - type: $type");
+                      });
+                    },
+                  )
+              ],
             ),
           ],
         ),
