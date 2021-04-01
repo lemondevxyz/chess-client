@@ -352,19 +352,19 @@ class Server implements ServerService {
   static const reconnectDuration = Duration(seconds: 30);
   static const routes = {
     // where to send cmd requests
-    "cmd": "/cmd",
+    "cmd": "cmd",
     // where to send invite request
-    "invite": "/invite",
+    "invite": "invite",
     // where to accept invite requests
-    "accept": "/accept",
+    "accept": "accept",
     // where to upgrade http connection to websocket
-    "ws": "/ws",
+    "ws": "ws",
     // where to send requests to test authorization.
-    "protect": "/protect",
+    "protect": "protect",
     // where to get users that want to play
-    "avali": "/avali",
+    "avali": "avali",
     // where to get avaliable moves
-    "possib": "/possib",
+    "possib": "possib",
   };
 
   final Map<String, String> _headers = {

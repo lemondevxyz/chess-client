@@ -1,4 +1,5 @@
 class ServerConf {
+  static const apiver = "v0";
   // amount of time to wait, before we completely stop trying to reconnect.
   bool ssl;
   Duration timeout;
@@ -7,7 +8,10 @@ class ServerConf {
 
   String earl(String proto, String path) {
     return Uri(
-            scheme: proto, host: this.url.host, port: this.url.port, path: path)
+            scheme: proto,
+            host: this.url.host,
+            port: this.url.port,
+            path: "/api/${ServerConf.apiver}/$path")
         .toString();
   }
 

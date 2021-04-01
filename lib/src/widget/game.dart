@@ -198,16 +198,15 @@ class _GameState extends State<GameRoute> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Expanded(
-              child: game.Controls(_board(), () {
-                setState(() {
-                  _reverse = !_reverse;
-                });
-              }, () {
-                if (_isFinished)
-                  return true;
-                else
-                  return _yourTurn();
-              }()),
+              child: game.Controls(
+                _board(),
+                () {
+                  setState(() {
+                    _reverse = !_reverse;
+                  });
+                },
+                _isFinished ? true : _yourTurn(),
+              ),
             ),
             Stack(
               children: <Widget>[
