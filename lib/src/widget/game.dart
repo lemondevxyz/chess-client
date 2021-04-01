@@ -17,8 +17,10 @@ class GameRoute extends StatefulWidget {
   final title = "Game";
   final bool testing;
   final rest.GameService service;
+  final Function() goToHub;
+  final GlobalKey<NavigatorState> _navigator;
 
-  const GameRoute(this.testing, this.service);
+  const GameRoute(this.testing, this.service, this.goToHub, this._navigator);
 
   @override
   _GameState createState() => _GameState();
@@ -44,17 +46,64 @@ class _GameState extends State<GameRoute> {
     });
   }
 
-  onDone(_) {
+  onDone(dynamic parameter) {
     widget.service.board.removeListener(onTurn);
-
     brd = widget.service.board.duplicate();
     _isFinished = true;
 
     brd.addListener(onTurn);
+    brd.history.forEach((i) {
+      print("${i.src} ${i.dst}");
+    });
 
     setState(() {
       redrawObject = Object();
     });
+
+    if (!(parameter is Done)) throw "bad parameter for done";
+    final d = parameter as Done;
+
+    String text;
+    if (d.isWon) {
+      text = "You won";
+    } else if (d.isLost) {
+      text = "You lost";
+    } else if (d.isStalemate) {
+      text = "Draw";
+    }
+
+    showDialog(
+        context: widget._navigator.currentContext,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(text),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text(
+                      "The game ended. Would you like to stay or go back to the hub?"),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text("leave"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (widget._navigator != null) {
+                    widget.goToHub();
+                  }
+                },
+              ),
+              TextButton(
+                child: Text("stay"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
   }
 
   @override
@@ -97,7 +146,10 @@ class _GameState extends State<GameRoute> {
     if (widget.testing) {
       return true;
     } else {
-      return widget.service.player == widget.service.playerTurn;
+      if (!_isFinished)
+        return widget.service.player == widget.service.playerTurn;
+      else // only meant for analysis, therefore board cannot be modified
+        return false;
     }
   }
 
@@ -150,7 +202,12 @@ class _GameState extends State<GameRoute> {
                 setState(() {
                   _reverse = !_reverse;
                 });
-              }, _yourTurn()),
+              }, () {
+                if (_isFinished)
+                  return true;
+                else
+                  return _yourTurn();
+              }()),
             ),
             Stack(
               children: <Widget>[

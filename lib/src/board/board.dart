@@ -45,6 +45,9 @@ class Board with ChangeNotifier implements rest.HistoryService {
       });
     });
 
+    brd.history.addAll(history);
+    brd.historyLast = historyLast;
+
     return brd;
   }
 

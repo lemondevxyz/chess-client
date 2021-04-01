@@ -11,7 +11,7 @@ class Debugging {
 }
 
 final server = rest.Server(rest.defaultServConf);
-const debug = Debugging.game;
+const debug = Debugging.none;
 
 void main() {
   runApp(App());
@@ -37,8 +37,8 @@ class _AppState extends State<App> {
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
           MaterialPageRoute(
-              builder: (BuildContext ctx) =>
-                  widget.GameRoute(debug == Debugging.game, server)),
+              builder: (BuildContext ctx) => widget.GameRoute(
+                  debug == Debugging.game, server, goToHub, _navigator)),
           (_) => false);
   }
 
@@ -81,53 +81,7 @@ class _AppState extends State<App> {
   void onDisconnect(_) => goToOffline();
   void onGame(_) => goToGame();
 
-  void onDone(dynamic parameter) {
-    if (!(dynamic is Done)) throw "bad parameter for done";
-
-    final d = parameter as Done;
-
-    String text;
-    if (d.isWon) {
-      text = "You won";
-    } else if (d.isLost) {
-      text = "You lost";
-    } else if (d.isStalemate) {
-      text = "Draw";
-    }
-
-    showDialog(
-        context: _navigator.currentContext,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(text),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  Text(
-                      "The game ended. Would you like to stay or go back to the hub?"),
-                ],
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text("leave"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (_navigator != null) {
-                    goToHub();
-                  }
-                },
-              ),
-              TextButton(
-                child: Text("stay"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        });
-  }
+  void onDone(dynamic parameter) {}
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +100,8 @@ class _AppState extends State<App> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         return MaterialPageRoute(builder: (BuildContext ctx) {
-          if (debug == Debugging.game) return widget.GameRoute(true, server);
+          if (debug == Debugging.game)
+            return widget.GameRoute(true, server, goToGame, _navigator);
 
           return OfflineRoute();
         });
