@@ -69,7 +69,7 @@ class PieceKind {
 }
 
 class Piece {
-  static const _imagePrefix = "images/";
+  static const _imagePrefix = "assets/images/";
   // pos
   Point pos;
   // player number

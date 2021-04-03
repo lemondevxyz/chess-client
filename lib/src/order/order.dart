@@ -1,5 +1,3 @@
-import 'package:event/event.dart';
-
 // [U] refers to an Update, [C] refers to a Command.
 // While [O] refers to an Update and a Command.
 enum OrderID {
@@ -19,7 +17,7 @@ enum OrderID {
   Disconnect, // Not actually an order, but more so to inform other components that the connection has been closed
 }
 
-class Order extends EventArgs {
+class Order {
   final OrderID id;
   final dynamic obj;
 

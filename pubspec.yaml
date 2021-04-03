@@ -24,12 +24,12 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^0.12.2
-  event: ^1.1.5
   websocket: ^0.0.5
+  flutter_config: ^1.0.8
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.1
+  # cupertino_icons: ^1.0.1
 
 dev_dependencies:
   flutter_test:
@@ -45,21 +45,20 @@ dev_dependencies:
 flutter:
   assets:
   # piece images
-  - assets/images/light/pawn.png
-  - assets/images/light/rook.png
-  - assets/images/light/bishop.png
-  - assets/images/light/knight.png
-  - assets/images/light/queen.png
-  - assets/images/light/king.png
   - assets/images/dark/pawn.png
-  - assets/images/dark/rook.png
   - assets/images/dark/bishop.png
   - assets/images/dark/knight.png
+  - assets/images/dark/rook.png
   - assets/images/dark/queen.png
   - assets/images/dark/king.png
+  - assets/images/light/pawn.png
+  - assets/images/light/bishop.png
+  - assets/images/light/knight.png
+  - assets/images/light/rook.png
+  - assets/images/light/queen.png
+  - assets/images/light/king.png
   # font
-  - assets/fonts/dubai/regular.ttf
-  - assets/fonts/dubai/bold.ttf
+  - assets/fonts/dubai/
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

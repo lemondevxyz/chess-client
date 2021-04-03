@@ -1,16 +1,17 @@
-import 'package:chess_client/src/order/model.dart';
 import 'package:chess_client/src/order/order.dart';
 import 'package:flutter/material.dart';
 import 'package:chess_client/src/widget/game.dart' as widget;
 import 'package:chess_client/src/widget/hub.dart' as widget;
 import 'package:chess_client/src/rest/server.dart' as rest;
+import 'package:chess_client/src/rest/conf.dart' as rest;
 
 class Debugging {
   static const none = 0;
   static const game = 1;
 }
 
-final server = rest.Server(rest.defaultServConf);
+rest.Server server = rest.Server(
+    rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
 const debug = Debugging.none;
 
 void main() {

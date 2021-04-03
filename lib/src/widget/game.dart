@@ -52,9 +52,6 @@ class _GameState extends State<GameRoute> {
     _isFinished = true;
 
     brd.addListener(onTurn);
-    brd.history.forEach((i) {
-      print("${i.src} ${i.dst}");
-    });
 
     setState(() {
       redrawObject = Object();
@@ -108,6 +105,10 @@ class _GameState extends State<GameRoute> {
 
   @override
   dispose() {
+    widget.service.unsubscribe(OrderID.Done);
+    widget.service.unsubscribe(OrderID.Turn);
+    widget.service.unsubscribe(OrderID.Promote);
+
     _board().removeListener(onTurn);
 
     super.dispose();
@@ -122,6 +123,10 @@ class _GameState extends State<GameRoute> {
       widget.service.subscribe(OrderID.Promote, onPromote);
       widget.service.unsubscribe(OrderID.Done);
       widget.service.subscribe(OrderID.Done, onDone);
+      widget.service.unsubscribe(OrderID.Turn);
+      widget.service.subscribe(OrderID.Turn, (_) {
+        onTurn();
+      });
     }
 
     _board().removeListener(onTurn);
@@ -190,7 +195,7 @@ class _GameState extends State<GameRoute> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: !_isFinished,
       ),
       body: Center(
         child: Column(
@@ -205,7 +210,9 @@ class _GameState extends State<GameRoute> {
                     _reverse = !_reverse;
                   });
                 },
-                _isFinished ? true : _yourTurn(),
+                widget.goToHub,
+                _yourTurn(),
+                _isFinished,
               ),
             ),
             Stack(

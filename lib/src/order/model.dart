@@ -1,7 +1,6 @@
 import "package:chess_client/src/board/board.dart";
 import "package:chess_client/src/board/generator.dart";
-import 'package:chess_client/src/board/piece.dart';
-import 'package:event/event.dart';
+//import 'package:chess_client/src/board/piece.dart';
 
 class Credentials {
   final String token;
@@ -108,7 +107,7 @@ class Promotion {
       };
 }
 
-class Promote extends EventArgs {
+class Promote {
   final int type;
   final Point src;
 
@@ -144,7 +143,7 @@ class Message {
       };
 }
 
-class Done extends EventArgs {
+class Done {
   final int result;
 
   bool get isLost => result == -1;

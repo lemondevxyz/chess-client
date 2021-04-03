@@ -11,9 +11,6 @@ import "package:http/http.dart" as http;
 import "dart:convert";
 import "package:websocket/websocket.dart";
 
-final defaultServConf =
-    ServerConf(false, "localhost", 8080, Duration(seconds: 20));
-
 // Server is a definition of the server we communicate with.
 class Server implements ServerService {
   final ServerConf conf;
@@ -306,7 +303,9 @@ class Server implements ServerService {
             case OrderID.Turn:
               try {
                 final turn = Turn.fromJson(o.obj);
+
                 _playerTurn = turn.player;
+                _notify(OrderID.Turn, turn);
               } catch (e) {
                 print("listen.turn: $e");
               }

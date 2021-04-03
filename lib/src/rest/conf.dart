@@ -1,17 +1,14 @@
 class ServerConf {
   static const apiver = "v0";
-  // amount of time to wait, before we completely stop trying to reconnect.
   bool ssl;
+  // amount of time to wait, before we completely stop trying to reconnect.
   Duration timeout;
 
   Uri url;
 
   String earl(String proto, String path) {
-    return Uri(
-            scheme: proto,
-            host: this.url.host,
-            port: this.url.port,
-            path: "/api/${ServerConf.apiver}/$path")
+    return Uri.parse(url.toString())
+        .replace(scheme: proto, path: path)
         .toString();
   }
 
@@ -21,7 +18,7 @@ class ServerConf {
       proto = "https";
     }
 
-    return this.earl(proto, path);
+    return this.earl(proto, "/api/${ServerConf.apiver}/$path");
   }
 
   String ws(String path) {
@@ -30,14 +27,17 @@ class ServerConf {
       proto = "wss";
     }
 
-    return this.earl(proto, path);
+    return this.earl(proto, "/api/${ServerConf.apiver}/$path");
+    //return this.earl(proto, path);
   }
 
-  ServerConf(bool ssl, String host, int port, Duration timeout) {
+  ServerConf(bool ssl, String host, Duration timeout, {int port}) {
     this.url = Uri(
       host: host,
-      port: port,
     );
+
+    if (port != null) this.url = this.url.replace(port: port);
+
     this.ssl = ssl;
     this.timeout = timeout;
   }

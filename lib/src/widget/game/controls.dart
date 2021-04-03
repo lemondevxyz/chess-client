@@ -1,14 +1,20 @@
+import 'dart:math' as math;
+
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
 class Controls extends StatelessWidget {
   static double size = 36.0;
 
-  final Function() reverse;
   final rest.HistoryService service;
+  final Function() reverse;
+  final Function() goToHub;
   final bool yourTurn;
+  final bool isFinished;
 
-  const Controls(this.service, this.reverse, this.yourTurn, {Key key})
+  const Controls(
+      this.service, this.reverse, this.goToHub, this.yourTurn, this.isFinished,
+      {Key key})
       : super(key: key);
 
   @override
@@ -37,27 +43,54 @@ class Controls extends StatelessWidget {
 
     const around = Spacer(flex: 5);
 
-    final size = MediaQuery.of(context).size.height / 16;
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
+    final min = width > height ? height : width;
+    final size = min / 16;
 
     final spacing = SizedBox(
       width: size,
       height: size,
     );
+
+    final ok = isFinished || yourTurn;
+
     return Row(
       children: <Widget>[
         around,
+        Tooltip(
+          message: "Return to hub",
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.rotationY(math.pi),
+            child: IconButton(
+              onPressed: () {
+                if (isFinished) goToHub();
+              },
+              iconSize: size,
+              icon: Icon(
+                Icons.exit_to_app,
+                color: isFinished
+                    ? Theme.of(context).primaryColor
+                    : Theme.of(context).disabledColor,
+              ),
+            ),
+          ),
+        ),
+        spacing,
         Tooltip(
           message: "View previous move",
           child: IconButton(
             iconSize: size,
             icon: Icon(
               Icons.chevron_left,
-              color: prev && yourTurn
+              color: prev && ok
                   ? Theme.of(context).primaryColor
                   : Theme.of(context).disabledColor,
             ),
             onPressed: () {
-              if (prev && yourTurn) service.goPrev();
+              if (prev && ok) service.goPrev();
             },
           ),
         ),
@@ -77,12 +110,12 @@ class Controls extends StatelessWidget {
             iconSize: size,
             icon: Icon(
               Icons.restore,
-              color: reset && yourTurn
+              color: reset && ok
                   ? Theme.of(context).primaryColor
                   : Theme.of(context).disabledColor,
             ),
             onPressed: () {
-              if (reset && yourTurn) service.resetHistory();
+              if (reset && ok) service.resetHistory();
             },
           ),
         ),
@@ -108,12 +141,12 @@ class Controls extends StatelessWidget {
             iconSize: size,
             icon: Icon(
               Icons.chevron_right,
-              color: next && yourTurn
+              color: next && ok
                   ? Theme.of(context).primaryColor
                   : Theme.of(context).disabledColor,
             ),
             onPressed: () {
-              if (next && yourTurn) service.goNext();
+              if (next && ok) service.goNext();
             },
           ),
         ),
