@@ -1,6 +1,11 @@
+import 'dart:collection';
+
+import 'package:chess_client/src/board/generator.dart';
+import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/order.dart';
 import 'package:flutter/material.dart';
 import 'package:chess_client/src/widget/game.dart' as widget;
+import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/hub.dart' as widget;
 import 'package:chess_client/src/rest/server.dart' as rest;
 import 'package:chess_client/src/rest/conf.dart' as rest;
@@ -8,11 +13,12 @@ import 'package:chess_client/src/rest/conf.dart' as rest;
 class Debugging {
   static const none = 0;
   static const game = 1;
+  static const boardwidget = 2;
 }
 
 rest.Server server = rest.Server(
     rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
-const debug = Debugging.none;
+const debug = Debugging.boardwidget;
 
 void main() {
   runApp(App());
@@ -103,6 +109,42 @@ class _AppState extends State<App> {
         return MaterialPageRoute(builder: (BuildContext ctx) {
           if (debug == Debugging.game)
             return widget.GameRoute(true, server, goToGame, _navigator);
+          if (debug == Debugging.boardwidget)
+            return Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: game.BoardBackground(
+                      Colors.white,
+                      Colors.blueGrey,
+                      <game.BoardMarker>[
+                        game.BoardMarker(
+                          <String, Point>{
+                            "4:3": Point(4, 3),
+                            "6:3": Point(6, 3),
+                          } as HashMap,
+                          Colors.amber,
+                          true,
+                          percentage: 0.5,
+                        ),
+                        game.BoardMarker(
+                          <String, Point>{
+                            "4:4": Point(4, 4),
+                            "6:4": Point(6, 4),
+                          } as HashMap,
+                          Colors.deepPurple,
+                          false,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                game.BoardItem(
+                  Piece(Point(4, 3), PieceKind.king, 2),
+                  55,
+                ),
+              ],
+            );
 
           return OfflineRoute();
         });

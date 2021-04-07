@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
@@ -222,16 +224,17 @@ class _BoardState extends State<BoardWidget> {
                               ),
                             if (_points.exists(pnt))
                               Center(
-                                  child: Container(
-                                width: constraints.maxWidth / 2,
-                                height: constraints.maxHeight / 2,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .primaryColor
-                                      .withOpacity(0.54),
-                                  shape: BoxShape.circle,
+                                child: Container(
+                                  width: constraints.maxWidth / 2,
+                                  height: constraints.maxHeight / 2,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.54),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              )),
+                              ),
                           ],
                         ),
                       ),
@@ -240,6 +243,105 @@ class _BoardState extends State<BoardWidget> {
                 },
               ),
             )));
+  }
+}
+
+class BoardItem extends StatelessWidget {
+  final Piece pec;
+  final double size;
+
+  final double x;
+  final double y;
+
+  BoardItem(this.pec, this.size, {Key key})
+      : x = pec.pos.x * size,
+        y = pec.pos.y * size,
+        super(key: key);
+
+  @override
+  Widget build(BuildContext build) {
+    return Positioned(
+      width: this.size,
+      height: this.size,
+      left: x,
+      top: y,
+      child: Image.asset(
+        pec.filename(),
+        width: this.size,
+        height: this.size,
+      ),
+    );
+  }
+}
+
+class BoardMarker {
+  HashMap<String, void> points;
+  final Color color;
+
+  BoardMarker(this.points, this.color);
+}
+
+class BoardBackground extends CustomPainter {
+  static int size = 8;
+  final List<BoardMarker> markerPoints;
+
+  final Color pri;
+  final Color sec;
+
+  const BoardBackground(this.pri, this.sec, this.markerPoints);
+
+  Color getBackground(Point pnt) {
+    final x = pnt.x;
+    final y = pnt.y;
+
+    final Color pri = (x % 2 == 1) ? this.pri : this.sec;
+    final Color sec = pri == this.pri ? this.sec : this.pri;
+
+    final clr = (y % 2) == 0 ? sec : pri;
+    return clr;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final res = size.height > size.width ? size.width : size.height;
+    final div = res / 8;
+    for (int x = 0; x < BoardBackground.size; x++) {
+      for (int y = 0; y < BoardBackground.size; y++) {
+        double minx = x * div;
+        double miny = y * div;
+
+        double maxx = (x + 1) * div;
+        double maxy = (y + 1) * div;
+
+        final rect = Rect.fromLTRB(
+          minx,
+          miny,
+          maxx,
+          maxy,
+        );
+
+        final paint = Paint();
+        paint.color = getBackground(Point(x, y));
+
+        canvas.drawRect(rect, paint);
+
+        markerPoints.forEach((BoardMarker mark) {
+          if (mark.points.containsKey(Point(x, y).toString())) {
+            final paint = Paint();
+            paint.color = mark.color;
+
+            canvas.drawRect(rect, paint);
+
+            return;
+          }
+        });
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(BoardBackground oldDelegate) {
+    return oldDelegate.markerPoints != markerPoints;
   }
 }
 
