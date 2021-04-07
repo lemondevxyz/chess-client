@@ -32,7 +32,7 @@ class Server implements ServerService {
   void cleanInvite() {
     _invites.clear();
     _inviteTimers.forEach((t) {
-      t.cancel();
+      if (t != null) t.cancel();
     });
     _inviteTimers.clear();
 
@@ -76,8 +76,10 @@ class Server implements ServerService {
   final Map<OrderID, Function(dynamic)> _event = {};
   void subscribe(OrderID id, Function(dynamic) callback) {
     if (callback == null) throw "callback is null";
+    /*
     if (_event.containsKey(id))
       throw "there's already a subscribed function to this id";
+      */
 
     _event[id] = callback;
   }
@@ -125,6 +127,15 @@ class Server implements ServerService {
     });
 
     return c.future;
+  }
+
+  Future<void> leaveGame() async {
+    if (!inGame) return Future.error("not in game");
+
+    return _sendCommand(Order(
+      OrderID.Done,
+      Done(0),
+    ));
   }
 
   Future<void> promote(Point src, int type) async {
@@ -308,6 +319,15 @@ class Server implements ServerService {
                 _notify(OrderID.Turn, turn);
               } catch (e) {
                 print("listen.turn: $e");
+              }
+              break;
+            case OrderID.Checkmate:
+              try {
+                final checkmate = Turn.fromJson(o.obj);
+
+                _notify(OrderID.Checkmate, checkmate);
+              } catch (e) {
+                print("listen.checkmate: $e");
               }
               break;
             case OrderID.Game:

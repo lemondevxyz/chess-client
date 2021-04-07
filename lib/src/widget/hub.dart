@@ -16,7 +16,7 @@ class HubRoute extends StatefulWidget {
 
 class _HubRouteState extends State<HubRoute> {
   onInvite(dynamic) {
-    if (widget.service.invites.length > 0) {
+    if (mounted) if (widget.service.invites.length > 0) {
       setState(() {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -104,6 +104,21 @@ class _BoardState extends State<BoardWidget> {
                     pce = brd.get(pnt);
                   }
 
+                  Color bg;
+
+                  final bool playersKing = (pce != null &&
+                      pce.t == PieceKind.king &&
+                      pce.num == widget.playerNumber);
+
+                  if (focus != null && pnt.equal(focus))
+                    bg = Theme.of(context).primaryColor;
+                  else if (widget.isCheckmate != null &&
+                      widget.isCheckmate() &&
+                      playersKing)
+                    bg = Theme.of(context).errorColor;
+                  else
+                    bg = getBackground(pnt);
+
                   return GestureDetector(
                     onTap: () {
                       if (widget.board.canResetHistory()) {
@@ -117,7 +132,8 @@ class _BoardState extends State<BoardWidget> {
                       if (widget.ourTurn()) {
                         if (focus == null) {
                           if (pce != null) {
-                            if (widget.canFocus(pce)) {
+                            if (widget.playerNumber == null ||
+                                widget.playerNumber == pce.num) {
                               setState(() {
                                 focus = pnt;
                                 _setPoints();
@@ -165,9 +181,7 @@ class _BoardState extends State<BoardWidget> {
                       builder:
                           (BuildContext context, BoxConstraints constraints) =>
                               Container(
-                        color: (focus != null && pnt.equal(focus))
-                            ? Theme.of(context).primaryColor
-                            : getBackground(pnt),
+                        color: bg,
                         child: Stack(
                           children: <Widget>[
                             if (oriy == 0)
@@ -233,12 +247,17 @@ class BoardWidget extends StatefulWidget {
   final Board board;
   final Future<void> Function(Point src, Point dst) move;
   final bool Function() ourTurn;
-  final bool Function(Piece) canFocus; // disallow selecting enemy pieces
+  final int playerNumber;
   final bool reverse;
   final Future<List<Point>> Function(Point) possib;
+  final bool Function() isCheckmate;
 
-  BoardWidget(this.board, this.move, this.ourTurn, this.canFocus,
-      {Key key, this.reverse = false, this.possib})
+  BoardWidget(this.board, this.move, this.ourTurn,
+      {Key key,
+      this.reverse = false,
+      this.possib,
+      this.playerNumber,
+      this.isCheckmate})
       : super(key: key);
 
   @override

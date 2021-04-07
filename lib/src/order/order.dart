@@ -12,8 +12,8 @@ enum OrderID {
   Promotion, // [U]
   Castling, // [O]
   Checkmate, // [U]
-  Message, // [O]
-  Done, // [U]
+  // Message, // Deprecated
+  Done, // [O]
   Disconnect, // Not actually an order, but more so to inform other components that the connection has been closed
 }
 

@@ -131,6 +131,7 @@ class Castling extends Move {
 }
 */
 
+/*
 class Message {
   final String message;
 
@@ -142,14 +143,18 @@ class Message {
         "message": message,
       };
 }
+*/
+
+// Checkmate is the same as turn, so it's useless to re-define the class
+// [U]
+/*
+class Checkmate extends Turn {
+  Checkmate(int player) : super(player);
+}
+*/
 
 class Done {
   final int result;
-
-  bool get isLost => result == -1;
-  //bool get isDraw => result == 0;
-  bool get isStalemate => result == 0;
-  bool get isWon => result == 1;
 
   Done(this.result);
 

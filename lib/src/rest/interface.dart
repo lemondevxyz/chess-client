@@ -29,6 +29,7 @@ abstract class BoardService {
   Future<List<Point>> possib(Point src);
   Future<void> move(Point src, Point dst);
   Future<void> promote(Point src, int type);
+  Future<void> leaveGame();
 
   bool ourTurn();
 }

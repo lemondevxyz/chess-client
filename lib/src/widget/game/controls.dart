@@ -59,40 +59,18 @@ class Controls extends StatelessWidget {
     return Row(
       children: <Widget>[
         around,
-        Tooltip(
-          message: "Return to hub",
-          child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.rotationY(math.pi),
-            child: IconButton(
-              onPressed: () {
-                if (isFinished) goToHub();
-              },
-              iconSize: size,
-              icon: Icon(
-                Icons.exit_to_app,
-                color: isFinished
-                    ? Theme.of(context).primaryColor
-                    : Theme.of(context).disabledColor,
-              ),
-            ),
+        IconButton(
+          tooltip: "View previous move",
+          iconSize: size,
+          icon: Icon(
+            Icons.chevron_left,
+            color: prev && ok
+                ? Theme.of(context).primaryColor
+                : Theme.of(context).disabledColor,
           ),
-        ),
-        spacing,
-        Tooltip(
-          message: "View previous move",
-          child: IconButton(
-            iconSize: size,
-            icon: Icon(
-              Icons.chevron_left,
-              color: prev && ok
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).disabledColor,
-            ),
-            onPressed: () {
-              if (prev && ok) service.goPrev();
-            },
-          ),
+          onPressed: () {
+            if (prev && ok) service.goPrev();
+          },
         ),
         spacing,
         Tooltip(
@@ -104,51 +82,45 @@ class Controls extends StatelessWidget {
           ),
         ),
         spacing,
-        Tooltip(
-          message: "Reset the board",
-          child: IconButton(
-            iconSize: size,
-            icon: Icon(
-              Icons.restore,
-              color: reset && ok
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).disabledColor,
-            ),
-            onPressed: () {
-              if (reset && ok) service.resetHistory();
-            },
+        IconButton(
+          tooltip: "Reset the board",
+          iconSize: size,
+          icon: Icon(
+            Icons.restore,
+            color: reset && ok
+                ? Theme.of(context).primaryColor
+                : Theme.of(context).disabledColor,
           ),
+          onPressed: () {
+            if (reset && ok) service.resetHistory();
+          },
         ),
         spacing,
         if (reverse != null)
-          Tooltip(
-            message: "Reverse the board",
-            child: IconButton(
-              iconSize: size,
-              icon: Icon(
-                Icons.swap_vert,
-              ),
-              color: Theme.of(context).primaryColor,
-              onPressed: () {
-                if (reverse != null) reverse();
-              },
-            ),
-          ),
-        spacing,
-        Tooltip(
-          message: "View next move",
-          child: IconButton(
+          IconButton(
+            tooltip: "Reverse the board",
             iconSize: size,
             icon: Icon(
-              Icons.chevron_right,
-              color: next && ok
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).disabledColor,
+              Icons.swap_vert,
             ),
+            color: Theme.of(context).primaryColor,
             onPressed: () {
-              if (next && ok) service.goNext();
+              if (reverse != null) reverse();
             },
           ),
+        spacing,
+        IconButton(
+          tooltip: "View next move",
+          iconSize: size,
+          icon: Icon(
+            Icons.chevron_right,
+            color: next && ok
+                ? Theme.of(context).primaryColor
+                : Theme.of(context).disabledColor,
+          ),
+          onPressed: () {
+            if (next && ok) service.goNext();
+          },
         ),
         around,
       ],

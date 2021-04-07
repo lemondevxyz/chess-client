@@ -2,7 +2,7 @@
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
-import 'package:chess_client/src/order/model.dart';
+import 'package:chess_client/src/order/model.dart' as model;
 import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/interface.dart' as rest;
 // Our widgets
@@ -32,14 +32,28 @@ class _GameState extends State<GameRoute> {
   bool _isFinished = false;
   Point _promote;
   Object redrawObject;
+  int checkmate;
+  int player;
+
+  onCheckmate(dynamic parameter) {
+    if (!(parameter is model.Turn)) {
+      print("checkmate has bad struct");
+      return;
+    }
+
+    final c = parameter as model.Turn;
+    setState(() {
+      checkmate = c.player;
+    });
+  }
 
   onPromote(dynamic parameter) {
-    if (!(parameter is Promote)) {
+    if (!(parameter is model.Promote)) {
       print("promote has bad struct");
       return;
     }
 
-    final p = parameter as Promote;
+    final p = parameter as model.Promote;
 
     setState(() {
       _promote = p.src;
@@ -57,16 +71,16 @@ class _GameState extends State<GameRoute> {
       redrawObject = Object();
     });
 
-    if (!(parameter is Done)) throw "bad parameter for done";
-    final d = parameter as Done;
+    if (!(parameter is model.Done)) throw "bad parameter for done";
+    final d = parameter as model.Done;
 
     String text;
-    if (d.isWon) {
+    if (d.result == widget.service.player) {
       text = "You won";
-    } else if (d.isLost) {
+    } else if (d.result != 0) {
       text = "You lost";
-    } else if (d.isStalemate) {
-      text = "Draw";
+    } else if (d.result == 0) {
+      text = "Stalemate";
     }
 
     showDialog(
@@ -108,6 +122,7 @@ class _GameState extends State<GameRoute> {
     widget.service.unsubscribe(OrderID.Done);
     widget.service.unsubscribe(OrderID.Turn);
     widget.service.unsubscribe(OrderID.Promote);
+    widget.service.unsubscribe(OrderID.Checkmate);
 
     _board().removeListener(onTurn);
 
@@ -119,14 +134,15 @@ class _GameState extends State<GameRoute> {
     if (!widget.testing) {
       _reverse = (widget.service.player == 1 ? false : true);
 
-      widget.service.unsubscribe(OrderID.Promote);
       widget.service.subscribe(OrderID.Promote, onPromote);
-      widget.service.unsubscribe(OrderID.Done);
       widget.service.subscribe(OrderID.Done, onDone);
-      widget.service.unsubscribe(OrderID.Turn);
+      widget.service.subscribe(OrderID.Checkmate, onCheckmate);
       widget.service.subscribe(OrderID.Turn, (_) {
         onTurn();
+        checkmate = -1;
       });
+
+      player = widget.service.player;
     }
 
     _board().removeListener(onTurn);
@@ -196,6 +212,50 @@ class _GameState extends State<GameRoute> {
       appBar: AppBar(
         title: Text(widget.title),
         automaticallyImplyLeading: !_isFinished,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: "Leave game",
+          onPressed: () {
+            showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  final String txt = _isFinished
+                      ? "Are you sure you want to leave? You'll lose the ability analyse this game!"
+                      : "Are your sure you want to leave this game? You'll lose the game!";
+
+                  return AlertDialog(
+                    title: Text("Are you sure?"),
+                    content: SingleChildScrollView(
+                      child: ListBody(
+                        children: <Widget>[
+                          Text(txt),
+                        ],
+                      ),
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        child: Text("leave"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          if (!_isFinished) {
+                            widget.service.unsubscribe(OrderID.Done);
+                            widget.service.leaveGame();
+                          }
+
+                          widget.goToHub();
+                        },
+                      ),
+                      TextButton(
+                        child: Text("stay"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                });
+          },
+        ),
       ),
       body: Center(
         child: Column(
@@ -221,10 +281,16 @@ class _GameState extends State<GameRoute> {
                   _board(),
                   _move(),
                   _yourTurn,
-                  _canFocus(),
+                  playerNumber: player,
                   reverse: _reverse,
                   possib: !widget.testing ? widget.service.possib : null,
                   key: ValueKey<Object>(redrawObject),
+                  isCheckmate: () {
+                    if (widget.testing)
+                      return false;
+                    else
+                      return widget.service.player == checkmate;
+                  },
                 ),
                 if (_promote != null && !widget.testing)
                   game.Promotion(
