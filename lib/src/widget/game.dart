@@ -13,6 +13,7 @@ import 'package:chess_client/src/widget/game/promotion.dart' as game;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+/*
 class GameRoute extends StatefulWidget {
   final title = "Game";
   final bool testing;
@@ -312,5 +313,13 @@ class _GameState extends State<GameRoute> {
         ),
       ),
     );
+  }
+}
+*/
+
+class GameRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext build) {
+    return game.BoardWidget();
   }
 }

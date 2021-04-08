@@ -41,12 +41,13 @@ class _AppState extends State<App> {
   }
 
   void goToGame() {
+    /*
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (BuildContext ctx) => widget.GameRoute(
                   debug == Debugging.game, server, goToHub, _navigator)),
-          (_) => false);
+          (_) => false);*/
   }
 
   void goToOffline() {
@@ -107,44 +108,11 @@ class _AppState extends State<App> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         return MaterialPageRoute(builder: (BuildContext ctx) {
+          /*
           if (debug == Debugging.game)
             return widget.GameRoute(true, server, goToGame, _navigator);
-          if (debug == Debugging.boardwidget)
-            return Stack(
-              children: <Widget>[
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: game.BoardBackground(
-                      Colors.white,
-                      Colors.blueGrey,
-                      <game.BoardMarker>[
-                        game.BoardMarker(
-                          <String, Point>{
-                            "4:3": Point(4, 3),
-                            "6:3": Point(6, 3),
-                          } as HashMap,
-                          Colors.amber,
-                          true,
-                          percentage: 0.5,
-                        ),
-                        game.BoardMarker(
-                          <String, Point>{
-                            "4:4": Point(4, 4),
-                            "6:4": Point(6, 4),
-                          } as HashMap,
-                          Colors.deepPurple,
-                          false,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                game.BoardItem(
-                  Piece(Point(4, 3), PieceKind.king, 2),
-                  55,
-                ),
-              ],
-            );
+            */
+          if (debug == Debugging.boardwidget) return game.BoardWidget();
 
           return OfflineRoute();
         });

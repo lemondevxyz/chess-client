@@ -1,9 +1,11 @@
 import 'dart:collection';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
-import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 String numToString(int i) {
   switch (i) {
@@ -28,267 +30,67 @@ String numToString(int i) {
   return "";
 }
 
-class _BoardState extends State<BoardWidget> {
-  static final Color pri = Colors.white;
-  static final Color sec = Colors.grey[400];
-
-  static final double indexSizeDivider = 7;
-  static final double indexPadding = 2.5;
-
-  List<Point> _points = List<Point>.empty(growable: true);
-
-  // which piece we're focused at
-  // basically which square has the purple background
-  Point focus;
-
-  Color getBackground(Point pnt) {
-    final x = pnt.x;
-    final y = pnt.y;
-
-    Color pri = _BoardState.pri;
-    Color sec = _BoardState.sec;
-    if ((x % 2) == 0) {
-      pri = _BoardState.sec;
-      sec = _BoardState.pri;
-    }
-
-    final clr = (y % 2) == 0 ? sec : pri;
-    return clr;
-  }
-
-  void _setPoints() async {
-    if (focus != null && widget.possib != null) {
-      widget.possib(focus).then((_value) {
-        setState(() {
-          _points = _value;
-        });
-      }).catchError((e) {
-        print("possib $e");
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final brd = widget.board;
-    final height = MediaQuery.of(context).size.height - 150;
-
-    return ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: height,
-          maxHeight: height,
-        ),
-        child: Container(
-            color: Colors.white12,
-            margin: const EdgeInsets.all(20),
-            child: Center(
-              child: GridView.builder(
-                itemCount: 8 * 8,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 8,
-                  childAspectRatio: 1.0,
-                ),
-                itemBuilder: (BuildContext context, int index) {
-                  Point pnt = Point.fromIndex(index);
-
-                  final orix = pnt.x;
-                  final oriy = pnt.y;
-
-                  if (widget.reverse) {
-                    final x = 7 - pnt.x;
-                    final y = 7 - pnt.y;
-
-                    pnt = Point(x.abs(), y);
-                  }
-
-                  Piece pce;
-                  if (brd != null) {
-                    pce = brd.get(pnt);
-                  }
-
-                  Color bg;
-
-                  final bool playersKing = (pce != null &&
-                      pce.t == PieceKind.king &&
-                      pce.num == widget.playerNumber);
-
-                  if (focus != null && pnt.equal(focus))
-                    bg = Theme.of(context).primaryColor;
-                  else if (widget.isCheckmate != null &&
-                      widget.isCheckmate() &&
-                      playersKing)
-                    bg = Theme.of(context).errorColor;
-                  else
-                    bg = getBackground(pnt);
-
-                  return GestureDetector(
-                    onTap: () {
-                      if (widget.board.canResetHistory()) {
-                        widget.board.resetHistory();
-                        setState(() {
-                          focus = null;
-                        });
-                        return;
-                      }
-
-                      if (widget.ourTurn()) {
-                        if (focus == null) {
-                          if (pce != null) {
-                            if (widget.playerNumber == null ||
-                                widget.playerNumber == pce.num) {
-                              setState(() {
-                                focus = pnt;
-                                _setPoints();
-                              });
-                            }
-                          }
-                        } else {
-                          final doMovement = () {
-                            widget.move(focus, pnt);
-
-                            setState(() {
-                              _points.clear();
-                              focus = null;
-                            });
-                          };
-
-                          if (pce != null) {
-                            final ecp = brd.get(focus);
-                            // well if we select an ally
-                            // then shift focus to that piece
-                            if (ecp.num == pce.num) {
-                              if ((pce.t == PieceKind.king &&
-                                      ecp.t == PieceKind.rook) ||
-                                  (pce.t == PieceKind.rook &&
-                                      ecp.t == PieceKind.king)) {
-                                doMovement();
-                              } else {
-                                setState(() {
-                                  focus = pnt;
-                                  _setPoints();
-                                });
-                              }
-                            } else {
-                              // if it's an enemy then sure do the move
-                              doMovement();
-                            }
-                          } else {
-                            // movement to an empty square
-                            doMovement();
-                          }
-                        }
-                      }
-                    },
-                    child: LayoutBuilder(
-                      builder:
-                          (BuildContext context, BoxConstraints constraints) =>
-                              Container(
-                        color: bg,
-                        child: Stack(
-                          children: <Widget>[
-                            if (oriy == 0)
-                              // number of square, 1 through 8
-                              // drawn horizontally
-                              Container(
-                                child: Text(
-                                  "${(!widget.reverse ? 8 - orix : orix + 1).abs()}",
-                                  style: TextStyle(
-                                    fontSize:
-                                        constraints.maxWidth / indexSizeDivider,
-                                  ),
-                                ),
-                                padding: EdgeInsets.only(left: indexPadding),
-                              ),
-                            if (orix == 7)
-                              // letter of square, a through h
-                              // drawn vertically
-                              Align(
-                                alignment: FractionalOffset.bottomRight,
-                                child: Container(
-                                  child: Text(
-                                    "${numToString((widget.reverse ? 8 - oriy : oriy + 1).abs())}",
-                                    style: TextStyle(
-                                      fontSize: constraints.maxWidth /
-                                          indexSizeDivider,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            if (pce != null)
-                              Center(
-                                child: Image.asset(
-                                  pce.filename(),
-                                  width: constraints.maxWidth - 10,
-                                  height: constraints.maxHeight - 10,
-                                ),
-                              ),
-                            if (_points.exists(pnt))
-                              Center(
-                                child: Container(
-                                  width: constraints.maxWidth / 2,
-                                  height: constraints.maxHeight / 2,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .primaryColor
-                                        .withOpacity(0.54),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            )));
-  }
-}
-
-class BoardItem extends StatelessWidget {
-  final Piece pec;
-  final double size;
-
-  final double x;
-  final double y;
-
-  BoardItem(this.pec, this.size, {Key key})
-      : x = pec.pos.x * size,
-        y = pec.pos.y * size,
-        super(key: key);
-
-  @override
-  Widget build(BuildContext build) {
-    return Positioned(
-      width: this.size,
-      height: this.size,
-      left: x,
-      top: y,
-      child: Image.asset(
-        pec.filename(),
-        width: this.size,
-        height: this.size,
-      ),
-    );
-  }
-}
-
 class BoardMarker {
-  HashMap<String, void> points;
+  final HashMap<String, void> points;
   final Color color;
+  final bool isCircle;
+  // if isCircle is true and this variable is null, then defualt value(1.0) will be used.
+  final double circlePercentage;
+  // should our marker draw over the pieces???
+  final bool drawOverPiece;
 
-  BoardMarker(this.points, this.color);
+  const BoardMarker(this.points, this.color,
+      {this.isCircle, this.circlePercentage, this.drawOverPiece});
 }
 
 class BoardBackground extends CustomPainter {
   static int size = 8;
+  static int imgSize = 200;
+
   final List<BoardMarker> markerPoints;
 
-  final Color pri;
-  final Color sec;
+  Color pri;
+  Color sec;
 
-  const BoardBackground(this.pri, this.sec, this.markerPoints);
+  final HashMap<String, Piece> pieces;
+  ValueNotifier<int> _repaint;
+
+  final _images = <String, ui.Image>{} as HashMap<String, ui.Image>;
+
+  loadCache() {
+    final pecs = <Piece>[
+      Piece(Point(0, 0), PieceKind.rook, 1),
+      Piece(Point(0, 0), PieceKind.knight, 1),
+      Piece(Point(0, 0), PieceKind.bishop, 1),
+      Piece(Point(0, 0), PieceKind.queen, 1),
+      Piece(Point(0, 0), PieceKind.king, 1),
+      Piece(Point(0, 0), PieceKind.pawnf, 1),
+    ];
+
+    for (var i = 0; i < 2; i++) {
+      pecs.asMap().forEach((int index, Piece pec) {
+        if (i == 1) pec.num = 2;
+        final name = pec.filename();
+
+        rootBundle.load(name).then((img) {
+          ui.decodeImageFromList(Uint8List.view(img.buffer), (ui.Image img) {
+            _images[name] = img;
+            if (_images.length == 12) _repaint.value++;
+          });
+        });
+      });
+    }
+  }
+
+  final Animation<double> _pos;
+
+  BoardBackground(this.pri, this.sec, this.markerPoints, this.pieces,
+      {@required Listenable repaint, @required Animation<double> animation})
+      : _pos = Tween<double>(begin: 0, end: 300).animate(animation),
+        super(repaint: repaint) {
+    loadCache();
+    _repaint = repaint;
+  }
 
   Color getBackground(Point pnt) {
     final x = pnt.x;
@@ -304,64 +106,151 @@ class BoardBackground extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final res = size.height > size.width ? size.width : size.height;
-    final div = res / 8;
+    final div = res / BoardBackground.size;
+    final imgscale = (div < BoardBackground.imgSize
+        ? div / BoardBackground.imgSize
+        : BoardBackground.imgSize / div);
+
+    // print("animatin??");
+
     for (int x = 0; x < BoardBackground.size; x++) {
       for (int y = 0; y < BoardBackground.size; y++) {
+        final drawers = <Function()>[];
+        final pnt = Point(x, y);
+
+        // minimum x and y
         double minx = x * div;
         double miny = y * div;
-
+        // maximum x and y
         double maxx = (x + 1) * div;
         double maxy = (y + 1) * div;
-
-        final rect = Rect.fromLTRB(
-          minx,
-          miny,
-          maxx,
-          maxy,
-        );
-
-        final paint = Paint();
-        paint.color = getBackground(Point(x, y));
-
-        canvas.drawRect(rect, paint);
-
+        final rect = Rect.fromLTRB(minx, miny, maxx, maxy);
+        // draw all squares
+        canvas.drawRect(rect, Paint()..color = getBackground(Point(x, y)));
+        // draw all markers
         markerPoints.forEach((BoardMarker mark) {
           if (mark.points.containsKey(Point(x, y).toString())) {
-            final paint = Paint();
-            paint.color = mark.color;
+            final callback = () {
+              final paint = Paint()..color = mark.color;
+              if (mark.isCircle == true) {
+                final scale =
+                    mark.circlePercentage == null ? 1.0 : mark.circlePercentage;
+                final radius = scale * (div / 2);
 
-            canvas.drawRect(rect, paint);
+                final x = minx + (radius * 2);
+                final y = miny + (radius * 2);
 
-            return;
+                canvas.drawCircle(Offset(x, y), scale * (div / 2), paint);
+              } else
+                canvas.drawRect(rect, paint);
+
+              return;
+            };
+
+            if (mark.drawOverPiece == true)
+              drawers.add(callback);
+            else
+              callback();
           }
         });
+
+        // save the canvas
+        // because we want to scale down the image
+        // then restore the canvas
+        if (_images.length == 12) {
+          final pec = pieces[pnt.toString()];
+          if (pec != null) {
+            canvas.save();
+            // scale down the canvas, cause we cannot scale down the image :(
+            // note: if there's a better way to do this, hit me up!!!!
+            canvas.scale(imgscale);
+            // draw the darn thing
+            // (minx|miny) / imgscale
+            // will center the image in it's position
+            canvas.drawImage(_images[pec.filename()],
+                Offset(minx / imgscale, miny / imgscale), Paint());
+
+            canvas.restore();
+          }
+        }
+
+        // remember drawOverPiece, well this is also the only way to do this
+        // basically store the drawing function in an array(drawer) and execute them later.
+        // canvas.save & canvas.restore don't work
+        drawers.forEach((fn) {
+          fn();
+        });
       }
+    }
+
+    if (_images.length == 12) {
+      final pec = Piece(Point(4, 3), PieceKind.rook, 1);
+
+      canvas.save();
+      // scale down the canvas, cause we cannot scale down the image :(
+      // note: if there's a better way to do this, hit me up!!!!
+      canvas.scale(imgscale);
+      // draw the darn thing
+      // (minx|miny) / imgscale
+      // will center the image in it's position
+      canvas.drawImage(_images[pec.filename()], Offset(_pos.value, 0), Paint());
+
+      canvas.restore();
     }
   }
 
   @override
-  bool shouldRepaint(BoardBackground oldDelegate) {
-    return oldDelegate.markerPoints != markerPoints;
+  bool shouldRepaint(BoardBackground old) =>
+      old.pri != pri ||
+      old.sec != sec ||
+      old.markerPoints != markerPoints ||
+      old.pieces != pieces ||
+      (old._images.length == 0 && _images.length == 12);
+}
+
+class _BoardWidgetState extends State<BoardWidget>
+    with SingleTickerProviderStateMixin {
+  @override
+  build(BuildContext build) {
+    return Stack(
+      children: <Widget>[
+        Positioned.fill(
+          child: CustomPaint(
+            painter: BoardBackground(
+              Colors.white,
+              Colors.blueGrey,
+              <BoardMarker>[
+                BoardMarker(
+                  <String, Point>{
+                    "4:3": Point(4, 3),
+                    "6:3": Point(6, 3),
+                  } as HashMap,
+                  Colors.amber,
+                ),
+                BoardMarker(
+                  <String, Point>{
+                    "3:3": Point(3, 3),
+                  } as HashMap,
+                  Colors.red.withOpacity(0.75),
+                  drawOverPiece: false,
+                  isCircle: true,
+                  circlePercentage: 0.5,
+                ),
+              ],
+              <String, Piece>{"3:3": Piece(Point(3, 3), PieceKind.king, 2)}
+                  as HashMap,
+              repaint: ValueNotifier(0),
+              animation: AnimationController(
+                  vsync: this, duration: const Duration(seconds: 10)),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
 class BoardWidget extends StatefulWidget {
-  final Board board;
-  final Future<void> Function(Point src, Point dst) move;
-  final bool Function() ourTurn;
-  final int playerNumber;
-  final bool reverse;
-  final Future<List<Point>> Function(Point) possib;
-  final bool Function() isCheckmate;
-
-  BoardWidget(this.board, this.move, this.ourTurn,
-      {Key key,
-      this.reverse = false,
-      this.possib,
-      this.playerNumber,
-      this.isCheckmate})
-      : super(key: key);
-
   @override
-  _BoardState createState() => _BoardState();
+  _BoardWidgetState createState() => _BoardWidgetState();
 }
