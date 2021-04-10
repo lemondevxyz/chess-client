@@ -1,5 +1,4 @@
 # chess-client
-A chess client built using flutter.
+This marks the end of the unstable api version 0. Main difference is how the board sees the data table, it sees it currently as a two dimensional array of possible nullable pieces.
 
-- [] setup websocket
-- [] build api methods
+Also this version is not null safe.
