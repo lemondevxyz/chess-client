@@ -1,17 +1,7 @@
-// other dependecies
-import 'package:chess_client/src/board/board.dart';
-import 'package:chess_client/src/board/generator.dart';
-import 'package:chess_client/src/board/piece.dart';
-import 'package:chess_client/src/order/model.dart' as model;
-import 'package:chess_client/src/order/order.dart';
-import 'package:chess_client/src/rest/interface.dart' as rest;
 // Our widgets
 import 'package:chess_client/src/widget/game/board.dart' as game;
-import 'package:chess_client/src/widget/game/controls.dart' as game;
-import 'package:chess_client/src/widget/game/promotion.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 /*
 class GameRoute extends StatefulWidget {

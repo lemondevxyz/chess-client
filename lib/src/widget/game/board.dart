@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
+import 'package:chess_client/src/widget/game/piece_icons.dart' as icons;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -31,16 +33,20 @@ String numToString(int i) {
 }
 
 class BoardMarker {
-  final HashMap<String, void> points;
+  final points = HashMap<String, void>();
   final Color color;
   final bool isCircle;
-  // if isCircle is true and this variable is null, then defualt value(1.0) will be used.
+  // if isCircle is true and this variable is null, then default value(1.0) will be used.
   final double circlePercentage;
   // should our marker draw over the pieces???
   final bool drawOverPiece;
 
-  const BoardMarker(this.points, this.color,
+  BoardMarker(this.color,
       {this.isCircle, this.circlePercentage, this.drawOverPiece});
+
+  addPoint(Point pec) {
+    points[pec.toString()] = pec;
+  }
 }
 
 class BoardBackground extends CustomPainter {
@@ -53,9 +59,13 @@ class BoardBackground extends CustomPainter {
   Color sec;
 
   final HashMap<String, Piece> pieces;
-  ValueNotifier<int> _repaint;
-
   final _images = <String, ui.Image>{} as HashMap<String, ui.Image>;
+
+  ValueNotifier<int> _repaint;
+  Animation<double> _anim;
+  AnimationController _controller;
+
+  double div;
 
   loadCache() {
     final pecs = <Piece>[
@@ -82,14 +92,25 @@ class BoardBackground extends CustomPainter {
     }
   }
 
-  final Animation<double> _pos;
-
   BoardBackground(this.pri, this.sec, this.markerPoints, this.pieces,
-      {@required Listenable repaint, @required Animation<double> animation})
-      : _pos = Tween<double>(begin: 0, end: 300).animate(animation),
-        super(repaint: repaint) {
-    loadCache();
+      {ValueNotifier<int> repaint, AnimationController controller})
+      : super(repaint: Listenable.merge(<Listenable>[repaint, controller])) {
+    if (controller != null) {
+      _controller = controller;
+
+      _anim = Tween<double>(begin: 0, end: 5).animate(controller);
+
+      _anim.addStatusListener((AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          _controller.reverse();
+        }
+      });
+
+      _controller.forward();
+    }
+
     _repaint = repaint;
+    loadCache();
   }
 
   Color getBackground(Point pnt) {
@@ -103,15 +124,20 @@ class BoardBackground extends CustomPainter {
     return clr;
   }
 
+  Point clickAt(double dx, double dy) {
+    return Point(dx ~/ div, dy ~/ div);
+  }
+
+  final icon = icons.Pawn();
+
   @override
   void paint(Canvas canvas, Size size) {
     final res = size.height > size.width ? size.width : size.height;
-    final div = res / BoardBackground.size;
+    div = res / BoardBackground.size;
+
     final imgscale = (div < BoardBackground.imgSize
         ? div / BoardBackground.imgSize
         : BoardBackground.imgSize / div);
-
-    // print("animatin??");
 
     for (int x = 0; x < BoardBackground.size; x++) {
       for (int y = 0; y < BoardBackground.size; y++) {
@@ -137,14 +163,13 @@ class BoardBackground extends CustomPainter {
                     mark.circlePercentage == null ? 1.0 : mark.circlePercentage;
                 final radius = scale * (div / 2);
 
-                final x = minx + (radius * 2);
-                final y = miny + (radius * 2);
+                final double diff = 1.0 / mark.circlePercentage;
+                final x = minx + (radius * diff);
+                final y = miny + (radius * diff);
 
-                canvas.drawCircle(Offset(x, y), scale * (div / 2), paint);
+                canvas.drawCircle(Offset(x, y), radius, paint);
               } else
                 canvas.drawRect(rect, paint);
-
-              return;
             };
 
             if (mark.drawOverPiece == true)
@@ -183,20 +208,7 @@ class BoardBackground extends CustomPainter {
       }
     }
 
-    if (_images.length == 12) {
-      final pec = Piece(Point(4, 3), PieceKind.rook, 1);
-
-      canvas.save();
-      // scale down the canvas, cause we cannot scale down the image :(
-      // note: if there's a better way to do this, hit me up!!!!
-      canvas.scale(imgscale);
-      // draw the darn thing
-      // (minx|miny) / imgscale
-      // will center the image in it's position
-      canvas.drawImage(_images[pec.filename()], Offset(_pos.value, 0), Paint());
-
-      canvas.restore();
-    }
+    icon.paint(canvas, size);
   }
 
   @override
@@ -210,42 +222,48 @@ class BoardBackground extends CustomPainter {
 
 class _BoardWidgetState extends State<BoardWidget>
     with SingleTickerProviderStateMixin {
+  final markers = <BoardMarker>[];
+
+  @override
+  initState() {
+    Timer(Duration(seconds: 2), () {
+      final bm = BoardMarker(Colors.amber);
+      bm.addPoint(Point(4, 4));
+
+      markers.add(bm);
+    });
+
+    super.initState();
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+  }
+
   @override
   build(BuildContext build) {
-    return Stack(
-      children: <Widget>[
-        Positioned.fill(
-          child: CustomPaint(
-            painter: BoardBackground(
-              Colors.white,
-              Colors.blueGrey,
-              <BoardMarker>[
-                BoardMarker(
-                  <String, Point>{
-                    "4:3": Point(4, 3),
-                    "6:3": Point(6, 3),
-                  } as HashMap,
-                  Colors.amber,
-                ),
-                BoardMarker(
-                  <String, Point>{
-                    "3:3": Point(3, 3),
-                  } as HashMap,
-                  Colors.red.withOpacity(0.75),
-                  drawOverPiece: false,
-                  isCircle: true,
-                  circlePercentage: 0.5,
-                ),
-              ],
-              <String, Piece>{"3:3": Piece(Point(3, 3), PieceKind.king, 2)}
-                  as HashMap,
-              repaint: ValueNotifier(0),
-              animation: AnimationController(
-                  vsync: this, duration: const Duration(seconds: 10)),
-            ),
-          ),
-        ),
-      ],
+    final bg = BoardBackground(
+      Colors.white,
+      Colors.grey[900],
+      markers,
+      <String, Piece>{"4:3": Piece(Point(4, 3), PieceKind.king, 2)}
+          as HashMap<String, Piece>,
+      repaint: ValueNotifier(0),
+    );
+
+    return GestureDetector(
+      onTapDown: (TapDownDetails details) {
+        final pos = details.localPosition;
+
+        final pnt = bg.clickAt(pos.dx, pos.dy);
+        print("point $pnt");
+      },
+      child: CustomPaint(
+        isComplex: true,
+        willChange: true,
+        painter: bg,
+      ),
     );
   }
 }
