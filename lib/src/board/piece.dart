@@ -1,4 +1,6 @@
+import 'package:chess_client/chess_client_icons.dart';
 import "package:chess_client/src/board/generator.dart";
+import 'package:flutter/widgets.dart';
 
 // TODO: replace this with a class + change the name
 class PieceKind {
@@ -26,18 +28,7 @@ class PieceKind {
 
   const PieceKind(this.value);
 
-  static Map<int, String> char = {
-    empty: "",
-    pawnf: "p",
-    pawnb: "p",
-    bishop: "b",
-    knight: "n",
-    rook: "r",
-    queen: "q",
-    king: "k",
-  };
-
-  static Map<int, String> names = {
+  static const Map<int, String> names = {
     empty: "empty",
     pawnf: "pawn",
     pawnb: "pawn",
@@ -48,28 +39,34 @@ class PieceKind {
     king: "king",
   };
 
-  static Map<int, String> filenames = {
-    empty: "",
-    pawnf: "pawn.png",
-    pawnb: "pawn.png",
-    bishop: "bishop.png",
-    knight: "knight.png",
-    rook: "rook.png",
-    queen: "queen.png",
-    king: "king.png",
+  static const Map<int, IconData> icons = {
+    empty: null,
+    pawnf: ChessClient.pawn,
+    pawnb: ChessClient.pawn,
+    bishop: ChessClient.bishop,
+    knight: ChessClient.knight,
+    rook: ChessClient.rook,
+    queen: ChessClient.rook,
+    king: ChessClient.king,
   };
 
   String toString() {
     return value == empty ? "" : PieceKind.names[value];
   }
 
-  static String toShortString(int value) {
-    return PieceKind.char[value];
+  static String toShortString(int val) {
+    final str = PieceKind.names[val];
+    if (val == 0) return " ";
+
+    return str.substring(0, 1);
+  }
+
+  static IconData getIcon(int val) {
+    return icons[val];
   }
 }
 
 class Piece {
-  static const _imagePrefix = "assets/images/";
   // pos
   Point pos;
   // player number
@@ -90,17 +87,6 @@ class Piece {
 
   Piece copy() {
     return Piece(this.pos, this.t, this.num);
-  }
-
-  String filename() {
-    String filename = PieceKind.filenames[t];
-    if (num == 2) {
-      filename = "dark/" + filename;
-    } else if (num == 1) {
-      filename = "light/" + filename;
-    }
-
-    return _imagePrefix + filename;
   }
 
   // canGo returns true if dst is a legal move

@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:chess_client/chess_client_icons.dart';
 import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
-import 'package:chess_client/src/widget/game/piece_icons.dart' as icons;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 String numToString(int i) {
   switch (i) {
@@ -44,14 +42,19 @@ class BoardMarker {
   BoardMarker(this.color,
       {this.isCircle, this.circlePercentage, this.drawOverPiece});
 
-  addPoint(Point pec) {
-    points[pec.toString()] = pec;
+  addPoint(List<Point> ps) {
+    ps.forEach((pec) {
+      points[pec.toString()] = pec;
+    });
   }
 }
 
 class BoardBackground extends CustomPainter {
   static int size = 8;
   static int imgSize = 200;
+  // these are for piece shadows
+  static double shadowoffset = 2.0;
+  static double shadowblur = 2.0;
 
   final List<BoardMarker> markerPoints;
 
@@ -61,57 +64,9 @@ class BoardBackground extends CustomPainter {
   final HashMap<String, Piece> pieces;
   final _images = <String, ui.Image>{} as HashMap<String, ui.Image>;
 
-  ValueNotifier<int> _repaint;
-  Animation<double> _anim;
-  AnimationController _controller;
-
   double div;
 
-  loadCache() {
-    final pecs = <Piece>[
-      Piece(Point(0, 0), PieceKind.rook, 1),
-      Piece(Point(0, 0), PieceKind.knight, 1),
-      Piece(Point(0, 0), PieceKind.bishop, 1),
-      Piece(Point(0, 0), PieceKind.queen, 1),
-      Piece(Point(0, 0), PieceKind.king, 1),
-      Piece(Point(0, 0), PieceKind.pawnf, 1),
-    ];
-
-    for (var i = 0; i < 2; i++) {
-      pecs.asMap().forEach((int index, Piece pec) {
-        if (i == 1) pec.num = 2;
-        final name = pec.filename();
-
-        rootBundle.load(name).then((img) {
-          ui.decodeImageFromList(Uint8List.view(img.buffer), (ui.Image img) {
-            _images[name] = img;
-            if (_images.length == 12) _repaint.value++;
-          });
-        });
-      });
-    }
-  }
-
-  BoardBackground(this.pri, this.sec, this.markerPoints, this.pieces,
-      {ValueNotifier<int> repaint, AnimationController controller})
-      : super(repaint: Listenable.merge(<Listenable>[repaint, controller])) {
-    if (controller != null) {
-      _controller = controller;
-
-      _anim = Tween<double>(begin: 0, end: 5).animate(controller);
-
-      _anim.addStatusListener((AnimationStatus status) {
-        if (status == AnimationStatus.completed) {
-          _controller.reverse();
-        }
-      });
-
-      _controller.forward();
-    }
-
-    _repaint = repaint;
-    loadCache();
-  }
+  BoardBackground(this.pri, this.sec, this.markerPoints, this.pieces);
 
   Color getBackground(Point pnt) {
     final x = pnt.x;
@@ -128,20 +83,15 @@ class BoardBackground extends CustomPainter {
     return Point(dx ~/ div, dy ~/ div);
   }
 
-  final icon = icons.Pawn();
-
   @override
   void paint(Canvas canvas, Size size) {
+    // well to make the canvas have 1:1 aspect ratio, pick the smaller (width or height), and set it as the size for each piece, square, or circle.
     final res = size.height > size.width ? size.width : size.height;
     div = res / BoardBackground.size;
 
-    final imgscale = (div < BoardBackground.imgSize
-        ? div / BoardBackground.imgSize
-        : BoardBackground.imgSize / div);
-
     for (int x = 0; x < BoardBackground.size; x++) {
       for (int y = 0; y < BoardBackground.size; y++) {
-        final drawers = <Function()>[];
+        final drawers = <Function(Canvas)>[];
         final pnt = Point(x, y);
 
         // minimum x and y
@@ -152,63 +102,80 @@ class BoardBackground extends CustomPainter {
         double maxy = (y + 1) * div;
         final rect = Rect.fromLTRB(minx, miny, maxx, maxy);
         // draw all squares
-        canvas.drawRect(rect, Paint()..color = getBackground(Point(x, y)));
+        final paint = Paint();
+        paint.color = getBackground(Point(x, y));
+
+        canvas.drawRect(rect, paint);
         // draw all markers
         markerPoints.forEach((BoardMarker mark) {
-          if (mark.points.containsKey(Point(x, y).toString())) {
-            final callback = () {
+          final callback = (Canvas canvas) {
+            if (mark.points.containsKey(Point(x, y).toString())) {
               final paint = Paint()..color = mark.color;
               if (mark.isCircle == true) {
                 final scale =
                     mark.circlePercentage == null ? 1.0 : mark.circlePercentage;
                 final radius = scale * (div / 2);
 
-                final double diff = 1.0 / mark.circlePercentage;
+                final double diff = 1.0 / scale;
                 final x = minx + (radius * diff);
                 final y = miny + (radius * diff);
 
                 canvas.drawCircle(Offset(x, y), radius, paint);
               } else
                 canvas.drawRect(rect, paint);
-            };
+            }
+          };
 
-            if (mark.drawOverPiece == true)
-              drawers.add(callback);
-            else
-              callback();
-          }
+          if (mark.drawOverPiece)
+            drawers.add(callback);
+          else
+            callback(canvas);
         });
 
-        // save the canvas
-        // because we want to scale down the image
-        // then restore the canvas
-        if (_images.length == 12) {
-          final pec = pieces[pnt.toString()];
-          if (pec != null) {
-            canvas.save();
-            // scale down the canvas, cause we cannot scale down the image :(
-            // note: if there's a better way to do this, hit me up!!!!
-            canvas.scale(imgscale);
-            // draw the darn thing
-            // (minx|miny) / imgscale
-            // will center the image in it's position
-            canvas.drawImage(_images[pec.filename()],
-                Offset(minx / imgscale, miny / imgscale), Paint());
+        final pec = pieces[pnt.toString()];
+        if (pec != null) {
+          final icon = ChessClient.pawn;
+          final clr = (pec.num == 1 ? Colors.black : Colors.white);
+          final shadowclr = clr == Colors.black ? Colors.white : Colors.black;
 
-            canvas.restore();
-          }
+          TextPainter tp = TextPainter(textDirection: TextDirection.rtl);
+
+          tp.text = TextSpan(
+            text: String.fromCharCode(icon.codePoint),
+            style: TextStyle(
+              color: clr,
+              fontSize: div,
+              fontFamily: icon.fontFamily,
+              shadows: <Shadow>[
+                Shadow(
+                    color: shadowclr,
+                    offset: Offset(0.0, shadowoffset),
+                    blurRadius: shadowblur),
+                Shadow(
+                    color: Colors.black,
+                    offset: Offset(0.0, shadowoffset),
+                    blurRadius: shadowblur),
+                Shadow(
+                    color: Colors.black,
+                    offset: Offset(shadowoffset, 0.0),
+                    blurRadius: shadowblur),
+                Shadow(
+                    color: Colors.black,
+                    offset: Offset(-shadowoffset, 0.0),
+                    blurRadius: shadowblur),
+              ],
+            ),
+          );
+          tp.layout();
+
+          tp.paint(canvas, Offset(minx, miny));
         }
 
-        // remember drawOverPiece, well this is also the only way to do this
-        // basically store the drawing function in an array(drawer) and execute them later.
-        // canvas.save & canvas.restore don't work
-        drawers.forEach((fn) {
-          fn();
+        drawers.forEach((callback) {
+          callback(canvas);
         });
       }
     }
-
-    icon.paint(canvas, size);
   }
 
   @override
@@ -222,24 +189,12 @@ class BoardBackground extends CustomPainter {
 
 class _BoardWidgetState extends State<BoardWidget>
     with SingleTickerProviderStateMixin {
-  final markers = <BoardMarker>[];
-
-  @override
-  initState() {
-    Timer(Duration(seconds: 2), () {
-      final bm = BoardMarker(Colors.amber);
-      bm.addPoint(Point(4, 4));
-
-      markers.add(bm);
-    });
-
-    super.initState();
-  }
-
-  @override
-  dispose() {
-    super.dispose();
-  }
+  final markers = <BoardMarker>[
+    BoardMarker(Colors.red, isCircle: true, drawOverPiece: false)
+      ..addPoint(<Point>[
+        Point(4, 3),
+      ]),
+  ];
 
   @override
   build(BuildContext build) {
@@ -249,7 +204,6 @@ class _BoardWidgetState extends State<BoardWidget>
       markers,
       <String, Piece>{"4:3": Piece(Point(4, 3), PieceKind.king, 2)}
           as HashMap<String, Piece>,
-      repaint: ValueNotifier(0),
     );
 
     return GestureDetector(
