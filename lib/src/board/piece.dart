@@ -1,22 +1,47 @@
 import 'package:chess_client/chess_client_icons.dart';
-import "package:chess_client/src/board/generator.dart";
 import 'package:flutter/widgets.dart';
 
-// TODO: replace this with a class + change the name
+class Point {
+  final int x, y;
+
+  const Point(this.x, this.y);
+
+  Point.fromJson(Map<String, dynamic> json)
+      : x = json["x"],
+        y = json["y"];
+
+  Map<String, dynamic> toJson() => {
+        "x": x,
+        "y": y,
+      };
+
+  factory Point.fromIndex(int i) {
+    final x = (i / 8).abs().toInt();
+    final y = (i % 8).abs().toInt();
+
+    return Point(x, y);
+  }
+
+  String toString() => "$x:$y";
+
+  // valid returns false if the point is out of bounds
+  bool valid() => (this.x < 8 && this.x >= 0) && (this.y < 8 && this.y >= 0);
+
+  bool equal(Point dst) => dst.x == x && dst.y == y;
+}
+
 class PieceKind {
   static const empty = 0;
-  static const pawnf = 1;
-  static const pawnb = 2;
-  static const bishop = 3;
-  static const knight = 4;
-  static const rook = 5;
-  static const queen = 6;
-  static const king = 7;
+  static const pawn = 1;
+  static const bishop = 2;
+  static const knight = 3;
+  static const rook = 4;
+  static const queen = 5;
+  static const king = 6;
 
   static const values = <int>[
     empty,
-    pawnf,
-    pawnb,
+    pawn,
     bishop,
     knight,
     rook,
@@ -30,8 +55,7 @@ class PieceKind {
 
   static const Map<int, String> names = {
     empty: "empty",
-    pawnf: "pawn",
-    pawnb: "pawn",
+    pawn: "pawn",
     bishop: "bishop",
     knight: "knight",
     rook: "rook",
@@ -41,8 +65,7 @@ class PieceKind {
 
   static const Map<int, IconData> icons = {
     empty: null,
-    pawnf: ChessClient.pawn,
-    pawnb: ChessClient.pawn,
+    pawn: ChessClient.pawn,
     bishop: ChessClient.bishop,
     knight: ChessClient.knight,
     rook: ChessClient.rook,
@@ -70,88 +93,26 @@ class Piece {
   // pos
   Point pos;
   // player number
-  int num;
+  bool p1;
   // piece type
-  int t = PieceKind.empty;
+  int kind = PieceKind.empty;
 
   Piece.fromJson(Map<String, dynamic> json)
-      : num = json["player"],
-        t = PieceKind.values[json["type"]];
+      : p1 = json["p1"],
+        pos = Point.fromJson(json["pos"]),
+        kind = PieceKind.values[json["kind"]];
 
   Map<String, dynamic> toJson() => {
-        "player": this.num,
-        "type": t,
+        "p1": p1,
+        "type": kind,
+        "pos": pos,
       };
 
-  Piece(this.pos, this.t, this.num);
+  Piece(this.pos, this.kind, this.p1);
 
   Piece copy() {
-    return Piece(this.pos, this.t, this.num);
+    return Piece(this.pos, this.kind, this.p1);
   }
 
-  // canGo returns true if dst is a legal move
-  bool canGo(Point dst) {
-    // out of bounds
-    if (!dst.valid()) {
-      return false;
-    }
-    if (this.pos.equal(dst)) {
-      return false;
-    }
-
-    return this.possib().exists(dst);
-  }
-
-  // possib returns possible moves from this.pos
-  List<Point> possib() {
-    final ps = <Point>[];
-
-    switch (this.t) {
-      case PieceKind.pawnb:
-      case PieceKind.pawnf:
-        {
-          if (this.t == PieceKind.pawnb) {
-            ps.add(Point(this.pos.x + 1, this.pos.y));
-          } else {
-            ps.add(Point(this.pos.x - 1, this.pos.y));
-          }
-
-          // at start you can move two points
-          if (this.pos.x == 1 || this.pos.x == 6) {
-            ps.add(Point(this.pos.x - 2, this.pos.y));
-            ps.add(Point(this.pos.x + 2, this.pos.y));
-          }
-
-          break;
-        }
-      case PieceKind.bishop:
-        {
-          ps.addAll(this.pos.diagonal());
-          break;
-        }
-      case PieceKind.knight:
-        // 2,1 or -2, 1 or 2, -1 or -2, -1
-        // 1,2 or -1, 2 or 1, -2 or -2, -1
-        {
-          ps.addAll(this.pos.knight());
-          break;
-        }
-      case PieceKind.rook:
-        {
-          ps.addAll(this.pos.rook());
-          break;
-        }
-      case PieceKind.queen:
-        ps.addAll(this.pos.queen());
-        break;
-      case PieceKind.king:
-        ps.addAll(this.pos.square());
-        break;
-    }
-    ps.clean();
-
-    return ps;
-  }
-
-  String toString() => "$pos/${PieceKind(t).toString()}/$num";
+  String toString() => "$pos/${PieceKind(kind).toString()}/${p1 ? 1 : 0}";
 }

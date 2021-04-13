@@ -1,9 +1,6 @@
-import 'dart:async';
 import 'dart:collection';
 import 'dart:ui' as ui;
 
-import 'package:chess_client/chess_client_icons.dart';
-import 'package:chess_client/src/board/generator.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:flutter/material.dart';
 
@@ -49,8 +46,8 @@ class BoardMarker {
   }
 }
 
-class BoardBackground extends CustomPainter {
-  static int size = 8;
+class BoardGraphics extends CustomPainter {
+  static int max = 8;
   static int imgSize = 200;
   // these are for piece shadows
   static double shadowoffset = 2.0;
@@ -61,12 +58,11 @@ class BoardBackground extends CustomPainter {
   Color pri;
   Color sec;
 
-  final HashMap<String, Piece> pieces;
-  final _images = <String, ui.Image>{} as HashMap<String, ui.Image>;
+  final Piece Function(Point src) getPiece;
 
   double div;
 
-  BoardBackground(this.pri, this.sec, this.markerPoints, this.pieces);
+  BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece);
 
   Color getBackground(Point pnt) {
     final x = pnt.x;
@@ -87,10 +83,10 @@ class BoardBackground extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // well to make the canvas have 1:1 aspect ratio, pick the smaller (width or height), and set it as the size for each piece, square, or circle.
     final res = size.height > size.width ? size.width : size.height;
-    div = res / BoardBackground.size;
+    div = res / max;
 
-    for (int x = 0; x < BoardBackground.size; x++) {
-      for (int y = 0; y < BoardBackground.size; y++) {
+    for (int x = 0; x < max; x++) {
+      for (int y = 0; y < max; y++) {
         final drawers = <Function(Canvas)>[];
         final pnt = Point(x, y);
 
@@ -109,7 +105,8 @@ class BoardBackground extends CustomPainter {
         // draw all markers
         markerPoints.forEach((BoardMarker mark) {
           final callback = (Canvas canvas) {
-            if (mark.points.containsKey(Point(x, y).toString())) {
+            if (mark.points.containsKey(pnt.toString())) {
+              print("nyes $pnt");
               final paint = Paint()..color = mark.color;
               if (mark.isCircle == true) {
                 final scale =
@@ -126,49 +123,37 @@ class BoardBackground extends CustomPainter {
             }
           };
 
-          if (mark.drawOverPiece)
+          if (mark.drawOverPiece != null && mark.drawOverPiece == true)
             drawers.add(callback);
           else
             callback(canvas);
         });
 
-        final pec = pieces[pnt.toString()];
+        final pec = getPiece(pnt);
         if (pec != null) {
-          final icon = ChessClient.pawn;
-          final clr = (pec.num == 1 ? Colors.black : Colors.white);
-          final shadowclr = clr == Colors.black ? Colors.white : Colors.black;
+          final icon = PieceKind.getIcon(pec.kind);
+          final clr = !pec.p1 ? Colors.black : Colors.white;
+          final shadowclr = !pec.p1 ? Colors.white : Colors.black;
 
-          TextPainter tp = TextPainter(textDirection: TextDirection.rtl);
+          if (icon != null) {
+            final builder = ui.ParagraphBuilder(
+              ui.ParagraphStyle(
+                textAlign: TextAlign.center,
+              ),
+            );
 
-          tp.text = TextSpan(
-            text: String.fromCharCode(icon.codePoint),
-            style: TextStyle(
+            builder.pushStyle(ui.TextStyle(
               color: clr,
               fontSize: div,
               fontFamily: icon.fontFamily,
-              shadows: <Shadow>[
-                Shadow(
-                    color: shadowclr,
-                    offset: Offset(0.0, shadowoffset),
-                    blurRadius: shadowblur),
-                Shadow(
-                    color: Colors.black,
-                    offset: Offset(0.0, shadowoffset),
-                    blurRadius: shadowblur),
-                Shadow(
-                    color: Colors.black,
-                    offset: Offset(shadowoffset, 0.0),
-                    blurRadius: shadowblur),
-                Shadow(
-                    color: Colors.black,
-                    offset: Offset(-shadowoffset, 0.0),
-                    blurRadius: shadowblur),
-              ],
-            ),
-          );
-          tp.layout();
+            ));
+            builder.addText(String.fromCharCode(icon.codePoint));
 
-          tp.paint(canvas, Offset(minx, miny));
+            final para = builder.build();
+            para.layout(ui.ParagraphConstraints(width: div));
+
+            canvas.drawParagraph(para, Offset(minx, miny));
+          }
         }
 
         drawers.forEach((callback) {
@@ -179,50 +164,6 @@ class BoardBackground extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(BoardBackground old) =>
-      old.pri != pri ||
-      old.sec != sec ||
-      old.markerPoints != markerPoints ||
-      old.pieces != pieces ||
-      (old._images.length == 0 && _images.length == 12);
-}
-
-class _BoardWidgetState extends State<BoardWidget>
-    with SingleTickerProviderStateMixin {
-  final markers = <BoardMarker>[
-    BoardMarker(Colors.red, isCircle: true, drawOverPiece: false)
-      ..addPoint(<Point>[
-        Point(4, 3),
-      ]),
-  ];
-
-  @override
-  build(BuildContext build) {
-    final bg = BoardBackground(
-      Colors.white,
-      Colors.grey[900],
-      markers,
-      <String, Piece>{"4:3": Piece(Point(4, 3), PieceKind.king, 2)}
-          as HashMap<String, Piece>,
-    );
-
-    return GestureDetector(
-      onTapDown: (TapDownDetails details) {
-        final pos = details.localPosition;
-
-        final pnt = bg.clickAt(pos.dx, pos.dy);
-        print("point $pnt");
-      },
-      child: CustomPaint(
-        isComplex: true,
-        willChange: true,
-        painter: bg,
-      ),
-    );
-  }
-}
-
-class BoardWidget extends StatefulWidget {
-  @override
-  _BoardWidgetState createState() => _BoardWidgetState();
+  bool shouldRepaint(BoardGraphics old) =>
+      old.pri != pri || old.sec != sec || old.markerPoints != markerPoints;
 }

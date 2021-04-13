@@ -1,49 +1,80 @@
-import "package:chess_client/src/board/generator.dart";
 import "package:chess_client/src/board/piece.dart";
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
 class HistoryItem {
-  final Piece src;
-  final Piece dst;
+  final MapPiece src;
+  final MapPiece dst;
 
   const HistoryItem(this.src, this.dst);
 }
 
+class MapPiece {
+  final int id;
+  final Piece piece;
+
+  const MapPiece(this.id, this.piece);
+}
+
 class Board with ChangeNotifier implements rest.HistoryService {
   static const int max = 8;
-  var _data = List<List<Piece>>.empty(growable: true);
+  final _data = List<Piece>.filled(
+      32, Piece(Point(-1, -1), PieceKind.empty, false),
+      growable: false);
 
   // this is a list of all moves done by the both players
   final history = <HistoryItem>[];
   // this represents the last move we moved to
   int historyLast = 0;
 
-  Board.fromJson(List<dynamic> json) {
-    for (var i = 0; i < max; i++) {
-      this._data.add(List<Piece>.filled(max, null));
-    }
+  Board() {
+    const list = <int>[
+      // 0 -> 7
+      // 0   | 1    | 2    | 3    | 4    | 5    | 6    | 7
+      // 0,0 | 1, 0 | 2, 0 | 3, 0 | 4, 0 | 5, 0 | 6, 0 | 7, 0
+      PieceKind.rook, PieceKind.knight, PieceKind.bishop, PieceKind.queen,
+      PieceKind.king, PieceKind.bishop, PieceKind.knight, PieceKind.rook,
+      // 8 -> 15
+      // 8   | 9    | 10   | 11   | 12   | 13   | 14   | 15
+      // 0,1 | 1, 1 | 2, 1 | 3, 1 | 4, 1 | 5, 1 | 6, 1 | 7, 1
+      PieceKind.pawn, PieceKind.pawn, PieceKind.pawn, PieceKind.pawn,
+      PieceKind.pawn, PieceKind.pawn, PieceKind.pawn, PieceKind.pawn,
+      // 16 -> 23
+      // 16  | 17   | 18   | 19   | 20   | 21   | 22   | 23
+      // 0,6 | 1, 6 | 2, 6 | 3, 6 | 4, 6 | 5, 6 | 6, 6 | 7, 6
+      PieceKind.pawn, PieceKind.pawn, PieceKind.pawn, PieceKind.pawn,
+      PieceKind.pawn, PieceKind.pawn, PieceKind.pawn, PieceKind.pawn,
+      // 24 -> 31
+      // 24  | 25   | 26   | 27   | 28   | 29   | 30   | 31
+      // 0,7 | 1, 7 | 2, 7 | 3, 7 | 4, 7 | 5, 7 | 6, 7 | 7, 7
+      PieceKind.rook, PieceKind.knight, PieceKind.bishop, PieceKind.queen,
+      PieceKind.king, PieceKind.bishop, PieceKind.knight, PieceKind.rook,
+    ];
 
-    json.asMap().forEach((x, list) {
-      list.asMap().forEach((y, piece) {
-        if (piece != null) {
-          this._data[x][y] = Piece.fromJson(piece);
-        }
-      });
+    list.asMap().forEach((int index, int kind) {
+      int x = index % 8;
+      int y = index ~/ 8;
+
+      bool p1 = false;
+      if (index >= 16) {
+        p1 = true;
+        y += 4;
+      }
+
+      _data[index] = Piece(Point(x, y), kind, p1);
+    });
+  }
+
+  Board.fromJson(List<dynamic> json) {
+    json.asMap().forEach((int index, dynamic d) {
+      final mm = d as Map<String, dynamic>;
+      _data[index] = Piece.fromJson(d);
     });
   }
 
   Board duplicate() {
     final brd = Board();
-    _data.asMap().forEach((x, l) {
-      l.asMap().forEach((y, pec) {
-        if (pec == null) {
-          brd._data[x][y] = null;
-        } else {
-          brd._data[x][y] = Piece(pec.pos, pec.t, pec.num);
-        }
-      });
-    });
+    brd._data.addAll(_data);
 
     brd.history.addAll(history);
     brd.historyLast = historyLast;
@@ -51,204 +82,66 @@ class Board with ChangeNotifier implements rest.HistoryService {
     return brd;
   }
 
-  List<List<Piece>> toJson() {
+  List<Piece> toJson() {
     return _data;
-  }
-
-  Board() {
-    var alt1 = List<int>.filled(8, PieceKind.pawnb);
-    List<int> alt2 = [
-      PieceKind.rook,
-      PieceKind.knight,
-      PieceKind.bishop,
-      PieceKind.queen,
-      PieceKind.king,
-      PieceKind.bishop,
-      PieceKind.knight,
-      PieceKind.rook,
-    ];
-
-    for (var i = 0; i < max; i++) {
-      this._data.add(List<Piece>.filled(max, null));
-    }
-
-    for (var i = 0; i < 2; i++) {
-      int x = i;
-      int num = 2;
-      if (i == 1) {
-        alt1 = [];
-        alt1.addAll(alt2);
-
-        alt2 = List<int>.filled(8, PieceKind.pawnf);
-
-        x += 5;
-        num--;
-      }
-
-      for (var y = 0; y < 8; y++) {
-        this._data[x][y] = Piece(
-          Point(x, y),
-          alt2[y],
-          num,
-        );
-        this._data[x + 1][y] = Piece(
-          Point(x + 1, y),
-          alt1[y],
-          num,
-        );
-      }
-    }
   }
 
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     String str = "";
 
-    this._data.asMap().forEach((x, l) {
-      if (x != 0) {
+    this._data.asMap().forEach((int index, Piece pec) {
+      if (index != 0) {
         str += "\n";
       }
 
-      l.forEach((p) {
-        if (p != null) {
-          str += PieceKind.toShortString(p.t) + " ";
-        } else {
-          str += "  ";
-        }
-      });
+      if (pec != null) {
+        str += PieceKind.toShortString(pec.kind) + " ";
+      } else {
+        str += "  ";
+      }
     });
 
     return str;
   }
 
-  void set(Piece p) {
-    if (p != null) {
-      if (p.t == PieceKind.empty) {
-        this._data[p.pos.x][p.pos.y] = null;
-      } else {
-        this._data[p.pos.x][p.pos.y] = p;
-      }
+  void set(int id, Point pos) {
+    if (id >= 0 && id <= 31) throw "id out of bounds";
 
-      notifyListeners();
-    }
-  }
-
-  Piece get(Point p) {
-    final pie = this._data[p.x][p.y];
-    if (pie != null) {
-      pie.pos = p;
-    }
-
-    return pie;
-  }
-
-  bool canGo(Piece p, Point dst) {
-    if (p == null || !dst.valid()) {
-      return false;
-    }
-
-    int x = p.pos.x;
-    int y = p.pos.y;
-
-    bool ok = p.canGo(dst);
-    if (p.t == PieceKind.pawnf || p.t == PieceKind.pawnb) {
-      if (p.t == PieceKind.pawnf) {
-        x--;
-      } else {
-        x++;
-      }
-
-      // maybe pawn is going forward/backward
-      if (ok) {
-        // oops there is a piece in the way...
-        if (this.get(dst) != null) {
-          return false;
-        }
-      } else {
-        <Point>[
-          Point(x, y + 1),
-          Point(x, y - 1),
-        ].forEach((p) {
-          if (dst.equal(p)) {
-            ok = true;
-          }
-        });
-
-        // okay pawn is going +1, +1
-        // or +1, -1
-        if (ok) {
-          final o = this.get(dst);
-          // no piece there or piece belongs to us..
-          if (o == null || o.num == p.num) {
-            ok = false;
-          }
-        }
-      }
-
-      return ok;
+    if (!pos.valid()) {
+      this._data[id].pos = Point(-1, -1);
     } else {
-      if (!ok) {
-        return ok;
-      }
+      this._data[id].pos = pos;
     }
 
-    final int dir = p.pos.direction(dst);
-    if (p.t != PieceKind.knight) {
-      for (var i = 0; i < 8; i++) {
-        if (Direction.has(dir, Direction.up)) {
-          x--;
-        } else if (Direction.has(dir, Direction.down)) {
-          x++;
-        }
-
-        if (Direction.has(dir, Direction.left)) {
-          y--;
-        } else if (Direction.has(dir, Direction.right)) {
-          y++;
-        }
-
-        final o = Point(x, y);
-        if (!o.valid() || o.equal(dst)) {
-          break;
-        }
-
-        // something is in the way...
-        if (this.get(o) != null) {
-          return false;
-        }
-      }
-    }
-
-    return true;
+    notifyListeners();
   }
 
-  bool move(Piece p, Point dst) {
-    if (p == null || !dst.valid()) {
-      return false;
+  void setKind(int id, int kind) {
+    if (id >= 0 && id <= 31) throw "id out of bounds";
+
+    this._data[id].kind = kind;
+
+    notifyListeners();
+  }
+
+  // get Returns a piece by it's point
+  MapPiece get(Point src) {
+    if (!src.valid()) throw "point out of bounds";
+
+    for (int i = 0; i < _data.length; i++) {
+      final pec = _data[i];
+
+      if (pec.pos.equal(src)) return MapPiece(i, pec);
     }
 
-    bool ok = this.canGo(p, dst);
-    if (ok) {
-      Piece o = this.get(dst);
-      // friendly fire not allowed !!!
-      if (o != null && o.num == p.num) {
-        return false;
-      }
-      if (o == null) {
-        o = Piece(dst, PieceKind.empty, 0);
-      }
+    return null;
+  }
 
-      historyLast++;
-      this.history.add(HistoryItem(p.copy(), o.copy()));
+  // getByIndex returns a piece by it's index
+  Piece getByIndex(int id) {
+    if (id >= 0 && id <= 31) throw "id is invalid";
 
-      final src = p.pos;
-      this._data[src.x][src.y] = null;
-
-      p.pos = dst;
-
-      this.set(p);
-    }
-
-    return ok;
+    return _data[id];
   }
 
   // canGoPrev basically goes back one move in the move history
@@ -265,11 +158,11 @@ class Board with ChangeNotifier implements rest.HistoryService {
     historyLast--;
 
     final move = history[historyLast];
-    Piece pec = move.src.copy();
-    Piece cep = move.dst.copy();
+    Piece pec = move.src.piece.copy();
+    Piece cep = move.dst.piece.copy();
 
-    if (cep != null) this.set(cep);
-    if (pec != null) this.set(pec);
+    if (cep != null) this.set(move.src.id, cep.pos);
+    if (pec != null) this.set(move.dst.id, pec.pos);
   }
 
   // canGoNext determines if we can do the next move in the move history
@@ -285,13 +178,10 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
     final move = history[historyLast];
 
-    final pec = move.src.copy();
-    final cep = move.dst.copy();
+    final dst = move.dst.piece.pos;
 
-    this.set(Piece(pec.pos, PieceKind.empty, 0));
-    pec.pos = cep.pos;
-
-    this.set(pec);
+    _data[move.dst.id].pos = Point(-1, -1);
+    set(move.src.id, dst);
 
     historyLast++;
   }
@@ -306,13 +196,10 @@ class Board with ChangeNotifier implements rest.HistoryService {
     for (var i = historyLast; i < history.length; i++) {
       final move = history[historyLast];
 
-      final pec = move.src.copy();
-      final cep = move.dst.copy();
+      final dst = move.dst.piece.pos;
 
-      this._data[pec.pos.x][pec.pos.y] = null;
-      pec.pos = cep.pos;
-
-      this._data[pec.pos.x][pec.pos.y] = pec;
+      _data[move.dst.id].pos = Point(-1, -1);
+      _data[move.src.id].pos = dst;
 
       historyLast++;
     }

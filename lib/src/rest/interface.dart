@@ -1,5 +1,5 @@
 import 'package:chess_client/src/board/board.dart';
-import 'package:chess_client/src/board/generator.dart';
+import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/model.dart' as model;
 import 'package:chess_client/src/order/order.dart';
 
@@ -23,12 +23,12 @@ abstract class HubService
 // TODO: implement this in normal board
 abstract class BoardService {
   Board get board;
-  int get player;
-  int get playerTurn;
+  bool get p1;
+  bool get playerTurn;
 
-  Future<List<Point>> possib(Point src);
-  Future<void> move(Point src, Point dst);
-  Future<void> promote(Point src, int type);
+  Future<List<Point>> possib(int id);
+  Future<void> move(int id, Point dst);
+  Future<void> promote(int id, int type);
   Future<void> leaveGame();
 
   bool ourTurn();

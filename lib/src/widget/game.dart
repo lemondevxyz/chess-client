@@ -1,9 +1,14 @@
 // Our widgets
+import 'package:chess_client/src/board/board.dart';
+import 'package:chess_client/src/board/piece.dart';
+import 'package:chess_client/src/board/utils.dart' as utils;
+import 'package:chess_client/src/order/model.dart' as model;
+import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
 
-/*
 class GameRoute extends StatefulWidget {
   final title = "Game";
   final bool testing;
@@ -19,12 +24,25 @@ class GameRoute extends StatefulWidget {
 
 class _GameState extends State<GameRoute> {
   Board brd = Board();
-  bool _reverse = false;
   bool _isFinished = false;
-  Point _promote;
   Object redrawObject;
-  int checkmate;
-  int player;
+  bool checkmate;
+  bool p1;
+
+  final markers = <game.BoardMarker>[
+    game.BoardMarker(Colors.red),
+  ];
+
+  Piece getPiece(Point src) {
+    if (!widget.testing) {
+      final mp = widget.service.board.get(src);
+      if (mp == null) return null;
+
+      return mp.piece;
+    } else {
+      return Piece(Point(0, 0), PieceKind.pawn, (src.x % 2) == 1);
+    }
+  }
 
   onCheckmate(dynamic parameter) {
     if (!(parameter is model.Turn)) {
@@ -34,20 +52,10 @@ class _GameState extends State<GameRoute> {
 
     final c = parameter as model.Turn;
     setState(() {
-      checkmate = c.player;
-    });
-  }
+      final king = brd.getByIndex(utils.getKing(p1));
+      markers[0].addPoint(<Point>[king.pos]);
 
-  onPromote(dynamic parameter) {
-    if (!(parameter is model.Promote)) {
-      print("promote has bad struct");
-      return;
-    }
-
-    final p = parameter as model.Promote;
-
-    setState(() {
-      _promote = p.src;
+      checkmate = c.p1;
     });
   }
 
@@ -66,12 +74,10 @@ class _GameState extends State<GameRoute> {
     final d = parameter as model.Done;
 
     String text;
-    if (d.result == widget.service.player) {
+    if (d.p1 == widget.service.p1) {
       text = "You won";
-    } else if (d.result != 0) {
+    } else {
       text = "You lost";
-    } else if (d.result == 0) {
-      text = "Stalemate";
     }
 
     showDialog(
@@ -123,17 +129,15 @@ class _GameState extends State<GameRoute> {
   @override
   initState() {
     if (!widget.testing) {
-      _reverse = (widget.service.player == 1 ? false : true);
-
-      widget.service.subscribe(OrderID.Promote, onPromote);
+      // widget.service.subscribe(OrderID.Promote, onPromote);
       widget.service.subscribe(OrderID.Done, onDone);
       widget.service.subscribe(OrderID.Checkmate, onCheckmate);
       widget.service.subscribe(OrderID.Turn, (_) {
         onTurn();
-        checkmate = -1;
+        checkmate = false;
       });
 
-      player = widget.service.player;
+      p1 = widget.service.p1;
     }
 
     _board().removeListener(onTurn);
@@ -154,42 +158,14 @@ class _GameState extends State<GameRoute> {
     }
   }
 
-  bool _yourTurn() {
+  bool _ourTurn() {
     if (widget.testing) {
       return true;
     } else {
       if (!_isFinished)
-        return widget.service.player == widget.service.playerTurn;
+        return p1 == widget.service.playerTurn;
       else // only meant for analysis, therefore board cannot be modified
         return false;
-    }
-  }
-
-  Future<void> Function(Point, Point) _move() {
-    if (widget.testing) {
-      return (Point src, Point dst) {
-        if (!src.valid() || !dst.valid()) {
-          return Future.error("invalid dst or src");
-        }
-
-        _board().move(_board().get(src), dst);
-
-        return Future.value();
-      };
-    } else {
-      return widget.service.move;
-    }
-  }
-
-  bool Function(Piece) _canFocus() {
-    if (widget.testing) {
-      return (_) {
-        return true;
-      };
-    } else {
-      return (Piece pce) {
-        return pce.num == widget.service.player;
-      };
     }
   }
 
@@ -199,6 +175,8 @@ class _GameState extends State<GameRoute> {
 
   @override
   Widget build(BuildContext context) {
+    //final bg = game.BoardGraphics(Colors.white, Colors.blueGrey, markers, getPiece);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -249,67 +227,18 @@ class _GameState extends State<GameRoute> {
         ),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Expanded(
-              child: game.Controls(
-                _board(),
-                () {
-                  setState(() {
-                    _reverse = !_reverse;
-                  });
-                },
-                widget.goToHub,
-                _yourTurn(),
-                _isFinished,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) => Column(
+            children: <Widget>[
+              CustomPaint(
+                size: Size(constraints.maxWidth, constraints.maxHeight),
+                painter: game.BoardGraphics(
+                    Colors.white, Colors.blue, markers, getPiece),
               ),
-            ),
-            Stack(
-              children: <Widget>[
-                game.BoardWidget(
-                  _board(),
-                  _move(),
-                  _yourTurn,
-                  playerNumber: player,
-                  reverse: _reverse,
-                  possib: !widget.testing ? widget.service.possib : null,
-                  key: ValueKey<Object>(redrawObject),
-                  isCheckmate: () {
-                    if (widget.testing)
-                      return false;
-                    else
-                      return widget.service.player == checkmate;
-                  },
-                ),
-                if (_promote != null && !widget.testing)
-                  game.Promotion(
-                    widget.service.player,
-                    (int type) {
-                      widget.service.promote(this._promote, type).then((_) {
-                        setState(() {
-                          this._promote = null;
-                        });
-                      }).catchError(() {
-                        print(
-                            "trying to promote: point: $_promote - type: $type");
-                      });
-                    },
-                  )
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-  }
-}
-*/
-
-class GameRoute extends StatelessWidget {
-  @override
-  Widget build(BuildContext build) {
-    return game.BoardWidget();
   }
 }

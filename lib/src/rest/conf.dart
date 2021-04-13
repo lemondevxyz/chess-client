@@ -1,5 +1,5 @@
 class ServerConf {
-  static const apiver = "v0";
+  static const apiver = "v1";
   bool ssl;
   // amount of time to wait, before we completely stop trying to reconnect.
   Duration timeout;

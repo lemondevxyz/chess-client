@@ -1,11 +1,6 @@
-import 'dart:collection';
-
-import 'package:chess_client/src/board/generator.dart';
-import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/order.dart';
 import 'package:flutter/material.dart';
 import 'package:chess_client/src/widget/game.dart' as widget;
-import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/hub.dart' as widget;
 import 'package:chess_client/src/rest/server.dart' as rest;
 import 'package:chess_client/src/rest/conf.dart' as rest;
@@ -18,7 +13,7 @@ class Debugging {
 
 rest.Server server = rest.Server(
     rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
-const debug = Debugging.boardwidget;
+const debug = Debugging.game;
 
 void main() {
   runApp(App());
@@ -41,13 +36,12 @@ class _AppState extends State<App> {
   }
 
   void goToGame() {
-    /*
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (BuildContext ctx) => widget.GameRoute(
                   debug == Debugging.game, server, goToHub, _navigator)),
-          (_) => false);*/
+          (_) => false);
   }
 
   void goToOffline() {
@@ -68,6 +62,8 @@ class _AppState extends State<App> {
       case Debugging.none:
         server.connect();
         break;
+      case Debugging.game:
+        goToGame();
     }
 
     super.initState();
@@ -108,11 +104,10 @@ class _AppState extends State<App> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         return MaterialPageRoute(builder: (BuildContext ctx) {
-          /*
-          if (debug == Debugging.game)
-            return widget.GameRoute(true, server, goToGame, _navigator);
-            */
-          if (debug == Debugging.boardwidget) return game.BoardWidget();
+          switch (debug) {
+            case Debugging.game:
+              return widget.GameRoute(true, null, goToHub, _navigator);
+          }
 
           return OfflineRoute();
         });

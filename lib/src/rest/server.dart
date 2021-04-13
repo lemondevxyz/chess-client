@@ -6,7 +6,6 @@ import 'package:chess_client/src/order/model.dart';
 import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/conf.dart';
 import 'package:chess_client/src/rest/interface.dart';
-import 'package:chess_client/src/board/generator.dart';
 import "package:http/http.dart" as http;
 import "dart:convert";
 import "package:websocket/websocket.dart";
@@ -101,16 +100,16 @@ class Server implements ServerService {
   }
 
   // BoardSystem
-  int _playerTurn;
+  bool _playerTurn;
   Game _game;
-  int get playerTurn => _playerTurn;
+  bool get playerTurn => _playerTurn;
   bool get inGame => _game != null;
-  int get player => inGame ? _game.player : 0;
+  bool get p1 => inGame ? _game.p1 : null;
   Board get board => inGame ? _game.board : null;
 
-  Future<List<Point>> possib(Point src) async {
+  Future<List<Point>> possib(int id) async {
     final c = Completer<List<Point>>();
-    _postRequest(Server.routes["possib"], jsonEncode(Possible(src, null)))
+    _postRequest(Server.routes["possib"], jsonEncode(Possible(id, null)))
         .then((body) {
       final json = jsonDecode(body);
       final ls = <Point>[];
@@ -134,45 +133,45 @@ class Server implements ServerService {
 
     return _sendCommand(Order(
       OrderID.Done,
-      Done(0),
+      Done(p1),
     ));
   }
 
-  Future<void> promote(Point src, int type) async {
+  Future<void> promote(int id, int type) async {
     if (!inGame) {
       return Future.error("not in game");
     }
 
-    if (player != playerTurn) {
+    if (p1 != playerTurn) {
       return Future.error("not your turn");
     }
 
-    if (src == null || !src.valid()) {
+    if (!(id <= 31 && id >= 0)) {
       return Future.error("parameters are invalid");
     }
 
     return _sendCommand(Order(
       OrderID.Promote,
-      Promote(type, src),
+      Promote(id, type),
     ));
   }
 
-  Future<void> move(Point src, Point dst) async {
+  Future<void> move(int id, Point dst) async {
     if (!inGame) {
       return Future.error("not in game");
     }
 
-    if (player != playerTurn) {
+    if (p1 != playerTurn) {
       return Future.error("not your turn");
     }
 
-    if (src == null || dst == null || !src.valid() || !dst.valid()) {
+    if (!(id >= 0 && id <= 31) || dst == null || !dst.valid()) {
       return Future.error("parameters are invalid");
     }
 
     return _sendCommand(Order(
       OrderID.Move,
-      Move(src, dst),
+      Move(id, dst),
     ));
   }
 
@@ -181,7 +180,7 @@ class Server implements ServerService {
       throw "not in game";
     }
 
-    return playerTurn == _game.player;
+    return playerTurn == p1;
   }
 
   // WebsocketService
@@ -244,8 +243,7 @@ class Server implements ServerService {
               try {
                 final move = Move.fromJson(o.obj);
 
-                final pec = board.get(move.src);
-                board.move(pec, move.dst);
+                board.set(move.id, move.dst);
               } catch (e) {
                 print("listen.move: $e");
               }
@@ -263,50 +261,36 @@ class Server implements ServerService {
               try {
                 final promotion = Promotion.fromJson(o.obj);
 
-                final pec = board.get(promotion.dst);
-                if (pec == null) {
-                  print(
-                      "listen.promotion: null piece, something wrong with the synchrozation");
-                  return;
-                }
-
-                board.set(Piece(pec.pos, promotion.type, pec.num));
+                board.setKind(promotion.id, promotion.kind);
               } catch (e) {
                 print("listen.promotion: $e");
               }
               break;
             case OrderID.Castling:
+              // trust server data
               try {
-                final move = Move.fromJson(o.obj);
+                final move = Castling.fromJson(o.obj);
 
-                int rooky;
-                int kingy;
-                if (move.src.y == 0 || move.dst.y == 0) {
-                  rooky = 3;
-                  kingy = 2;
-                } else if (move.src.y == 7 || move.dst.y == 7) {
-                  rooky = 5;
-                  kingy = 6;
-                } else {
-                  print("listen.castling: hmm wrong format $move");
+                final king = board.getByIndex(move.src);
+                final rook = board.getByIndex(move.dst);
+
+                if (king.kind != PieceKind.king)
+                  throw "bad type. should be king, instead got ${king.kind}";
+                else if (rook.kind != PieceKind.rook)
+                  throw "bad type. should be rook, instead got ${rook.kind}";
+
+                int rookx;
+                int kingx;
+                if (rook.pos.x == 0) {
+                  rookx = 3;
+                  kingx = 2;
+                } else if (rook.pos.x == 7) {
+                  rookx = 5;
+                  kingx = 6;
                 }
 
-                if (rooky != 0 && kingy != 0) {
-                  final pec = board.get(move.src);
-                  if (pec == null) {
-                    print(
-                        "listen.castling: null castling, something wrong with the synchrozation");
-                    return;
-                  }
-
-                  board.set(Piece(move.src, PieceKind.empty, 0));
-                  board.set(Piece(move.dst, PieceKind.empty, 0));
-
-                  board.set(
-                      Piece(Point(move.src.x, rooky), PieceKind.rook, pec.num));
-                  board.set(
-                      Piece(Point(move.src.x, kingy), PieceKind.king, pec.num));
-                }
+                board.set(move.src, Point(kingx, king.pos.y));
+                board.set(move.dst, Point(rookx, rook.pos.y));
               } catch (e) {
                 print("listen.castling: $e");
               }
@@ -315,7 +299,7 @@ class Server implements ServerService {
               try {
                 final turn = Turn.fromJson(o.obj);
 
-                _playerTurn = turn.player;
+                _playerTurn = turn.p1;
                 _notify(OrderID.Turn, turn);
               } catch (e) {
                 print("listen.turn: $e");

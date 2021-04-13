@@ -1,6 +1,5 @@
 import "package:chess_client/src/board/board.dart";
-import "package:chess_client/src/board/generator.dart";
-//import 'package:chess_client/src/board/piece.dart';
+import 'package:chess_client/src/board/piece.dart';
 
 class Credentials {
   final String token;
@@ -20,23 +19,18 @@ class Credentials {
 
 class Game {
   final Board board;
-  final int player;
+  final bool p1;
 
-  const Game(this.board, this.player);
+  const Game(this.board, this.p1);
 
   Game.fromJson(Map<String, dynamic> json)
       : board = Board.fromJson(json["board"]),
-        player = json["player"];
-
-  Map<String, dynamic> toJson() => {
-        "board": board.toJson(),
-        "player": player,
-      };
+        p1 = json["p1"];
 }
 
 class Invite {
   // it's a variable cause it's easier to test
-  static var expiry = Duration(seconds: 30);
+  static const expiry = Duration(seconds: 30);
   final String id;
   // as a command, the server doesn't use this field.
 
@@ -48,119 +42,100 @@ class Invite {
 }
 
 class Move {
-  final Point src;
+  final int id;
   final Point dst;
 
-  const Move(this.src, this.dst);
+  const Move(this.id, this.dst);
 
   Move.fromJson(Map<String, dynamic> json)
-      : src = Point.fromJson(json["src"] as Map<String, dynamic>),
+      : id = json["id"],
         dst = Point.fromJson(json["dst"] as Map<String, dynamic>);
 
   Map<String, dynamic> toJson() => {
-        "src": src.toJson(),
+        "id": id,
         "dst": dst.toJson(),
       };
 }
 
 class Possible {
-  final Point src;
+  final int id;
   final List<Map<String, dynamic>> points;
 
-  Possible(this.src, this.points);
+  Possible(this.id, this.points);
 
   Possible.fromJson(Map<String, dynamic> json)
-      : points = json["points"],
-        src = Point.fromJson(json["src"]);
+      : id = json["id"],
+        points = json["points"];
 
   Map<String, dynamic> toJson() => {
+        if (id != null) "id": id,
         if (points != null) "points": points,
-        if (src != null) "src": src,
       };
 }
 
 class Turn {
-  final int player;
+  final bool p1;
+  const Turn(this.p1);
 
-  const Turn(this.player);
-
-  Turn.fromJson(Map<String, dynamic> json) : player = json["player"];
-
-  Map<String, int> toJson() => {
-        "player": player,
-      };
+  Turn.fromJson(Map<String, dynamic> json) : p1 = json["p1"];
 }
 
 class Promotion {
-  final int type;
-  final Point dst;
+  final int id;
+  final int kind;
 
-  const Promotion(this.type, this.dst);
+  const Promotion(this.id, this.kind);
 
   Promotion.fromJson(Map<String, dynamic> json)
-      : type = json["type"] as int,
-        dst = Point.fromJson(json["dst"]);
+      : id = json["id"],
+        kind = json["kind"];
 
   Map<String, dynamic> toJson() => {
-        "type": type,
-        "dst": dst,
+        "id": id,
+        "kind": kind,
       };
 }
 
 class Promote {
   final int type;
-  final Point src;
+  final int id;
 
-  Promote(this.type, this.src);
+  Promote(this.id, this.type);
 
   Promote.fromJson(Map<String, dynamic> json)
-      : type = json["type"] as int,
-        src = Point.fromJson(json["src"]);
+      : id = json["id"],
+        type = json["type"] as int;
 
   Map<String, dynamic> toJson() => {
+        "id": id,
         "type": type,
+      };
+}
+
+class Castling {
+  final int src;
+  final int dst;
+
+  const Castling(this.src, this.dst);
+
+  Castling.fromJson(Map<String, dynamic> json)
+      : src = json["src"],
+        dst = json["dst"];
+
+  Map<String, dynamic> toJson() => {
         "src": src,
+        "dst": dst,
       };
 }
-
-// Castling is the same as move, so it's useless to re-define the class
-// [O]
-/*
-class Castling extends Move {
-  Castling(Point src, Point dst) : super(src, dst);
-}
-*/
-
-/*
-class Message {
-  final String message;
-
-  const Message(this.message);
-
-  Message.fromJson(Map<String, dynamic> json) : message = json["message"];
-
-  Map<String, String> toJson() => {
-        "message": message,
-      };
-}
-*/
-
-// Checkmate is the same as turn, so it's useless to re-define the class
-// [U]
-/*
-class Checkmate extends Turn {
-  Checkmate(int player) : super(player);
-}
-*/
 
 class Done {
-  final int result;
+  final bool p1;
 
-  Done(this.result);
+  Done(this.p1);
 
-  Done.fromJson(Map<String, dynamic> json) : result = json["result"];
+  Done.fromJson(Map<String, dynamic> json) : p1 = json["p1"];
 
-  Map<String, int> toJson() => {
-        "result": result,
+  Map<String, dynamic> toJson() => {
+        "p1": p1,
       };
 }
