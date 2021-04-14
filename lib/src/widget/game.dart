@@ -41,6 +41,7 @@ class _GameState extends State<GameRoute> {
 
   Piece getPiece(Point src) {
     if (!widget.testing) {
+      if (widget.service.board == null) return null;
       final mp = widget.service.board.get(src);
       if (mp == null) return null;
 
@@ -249,7 +250,6 @@ class _GameState extends State<GameRoute> {
                     final mm = widget.service.board.get(dst);
 
                     if (widget.service.playerTurn != p1) {
-                      print("not our turn");
                       return;
                     }
 
@@ -258,24 +258,27 @@ class _GameState extends State<GameRoute> {
                       if (pec.p1 == p1) {
                         // our piece?
                         // then select it
-                        if (markers[0].points.length >= 0) {
-                          setState(() {
-                            markers[1].points.clear();
-                            markers[0].points.clear();
-                            markers[0].addPoint(<Point>[
-                              dst,
-                            ]);
+                        if (pec.kind == PieceKind.rook ||
+                            pec.kind == PieceKind.king) {
+                          if (focusid != null) {
+                            setState(() {
+                              markers[1].points.clear();
+                              markers[0].points.clear();
+                              markers[0].addPoint(<Point>[
+                                dst,
+                              ]);
 
-                            focusid = mm.id;
-                          });
+                              focusid = mm.id;
+                            });
 
-                          widget.service
-                              .possib(mm.id)
-                              .then((HashMap<String, Point> ll) {
-                            markers[1].points.addAll(ll);
-                          }).then((_) {
-                            setState(() {});
-                          });
+                            widget.service
+                                .possib(mm.id)
+                                .then((HashMap<String, Point> ll) {
+                              markers[1].points.addAll(ll);
+                            }).then((_) {
+                              setState(() {});
+                            });
+                          }
                         }
                       } else {
                         // not our piece? then move there
@@ -289,11 +292,12 @@ class _GameState extends State<GameRoute> {
                         }
                       }
                     } else {
-                      if (markers[0].points.length > 0) {
+                      if (focusid != null) {
                         // print("$dst");
-                        print("$focusid");
                         widget.service.move(focusid, dst).catchError((e) {
                           print("error $e");
+                        }).then((_) {
+                          focusid = null;
                         });
 
                         setState(() {

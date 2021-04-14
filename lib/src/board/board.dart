@@ -108,9 +108,13 @@ class Board with ChangeNotifier implements rest.HistoryService {
     if (!(id >= 0 && id <= 31)) throw "id out of bounds";
 
     if (!pos.valid()) {
-      this._data[id].pos = Point(-1, -1);
+      _data[id].pos = Point(-1, -1);
     } else {
-      this._data[id].pos = pos;
+      final cep = get(pos);
+      if (cep != null) {
+        _data[cep.id].pos = Point(-1, -1);
+      }
+      _data[id].pos = pos;
     }
 
     notifyListeners();
