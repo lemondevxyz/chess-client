@@ -41,8 +41,7 @@ class _GameState extends State<GameRoute> {
 
   Piece getPiece(Point src) {
     if (!widget.testing) {
-      final dst = _reverse ? Point(7 - src.x.abs(), 7 - src.y.abs()) : src;
-      final mp = widget.service.board.get(dst);
+      final mp = widget.service.board.get(src);
       if (mp == null) return null;
 
       return mp.piece;
@@ -177,8 +176,9 @@ class _GameState extends State<GameRoute> {
 
   @override
   Widget build(BuildContext context) {
-    final bg =
-        game.BoardGraphics(Colors.white, Colors.blueGrey, markers, getPiece);
+    final bg = game.BoardGraphics(
+        Colors.white, Colors.blueGrey, markers, getPiece,
+        reverse: _reverse);
 
     return Scaffold(
       appBar: AppBar(
@@ -244,11 +244,14 @@ class _GameState extends State<GameRoute> {
               children: <Widget>[
                 GestureDetector(
                   onTapDown: (TapDownDetails details) {
-                    final dst = bg.clickAt(
+                    Point dst = bg.clickAt(
                         details.localPosition.dx, details.localPosition.dy);
                     final mm = widget.service.board.get(dst);
 
-                    if (widget.service.playerTurn != p1) return;
+                    if (widget.service.playerTurn != p1) {
+                      print("not our turn");
+                      return;
+                    }
 
                     if (mm != null) {
                       final pec = mm.piece;

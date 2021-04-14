@@ -59,10 +59,12 @@ class BoardGraphics extends CustomPainter {
   Color sec;
 
   final Piece Function(Point src) getPiece;
+  final bool reverse;
 
   double div;
 
-  BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece);
+  BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece,
+      {this.reverse = false});
 
   Color getBackground(Point pnt) {
     final x = pnt.x;
@@ -76,7 +78,9 @@ class BoardGraphics extends CustomPainter {
   }
 
   Point clickAt(double dx, double dy) {
-    return Point(dx ~/ div, dy ~/ div);
+    final src = Point(dx ~/ div, dy ~/ div);
+
+    return reverse ? src.reverse() : src;
   }
 
   @override
@@ -88,7 +92,7 @@ class BoardGraphics extends CustomPainter {
     for (int x = 0; x < max; x++) {
       for (int y = 0; y < max; y++) {
         final drawers = <Function(Canvas)>[];
-        final pnt = Point(x, y);
+        final pnt = !reverse ? Point(x, y) : Point(x, y).reverse();
 
         // minimum x and y
         double minx = x * div;

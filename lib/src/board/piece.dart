@@ -22,6 +22,8 @@ class Point {
     return Point(x, y);
   }
 
+  Point reverse() => Point((7 - x).abs(), (7 - y).abs());
+
   String toString() => "$x:$y";
 
   // valid returns false if the point is out of bounds
