@@ -146,6 +146,18 @@ class BoardGraphics extends CustomPainter {
               color: clr,
               fontSize: div - txtrm,
               fontFamily: icon.fontFamily,
+              shadows: <Shadow>[
+                Shadow(
+                  color: shadowclr,
+                  offset: Offset(0, shadowoffset),
+                  blurRadius: shadowblur,
+                ),
+                Shadow(
+                  color: shadowclr,
+                  offset: Offset(0, shadowoffset * -1),
+                  blurRadius: shadowblur,
+                ),
+              ],
             ));
             builder.addText(String.fromCharCode(icon.codePoint));
 

@@ -8,6 +8,7 @@ import 'package:chess_client/src/order/model.dart' as model;
 import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
+import 'package:chess_client/src/widget/game/controls.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
 
@@ -29,6 +30,7 @@ class _GameState extends State<GameRoute> {
   bool _isFinished = false;
   bool checkmate;
   bool p1;
+  bool _reverse;
   int focusid;
 
   final markers = <game.BoardMarker>[
@@ -39,13 +41,20 @@ class _GameState extends State<GameRoute> {
 
   Piece getPiece(Point src) {
     if (!widget.testing) {
-      final mp = widget.service.board.get(src);
+      final dst = _reverse ? Point(7 - src.x.abs(), 7 - src.y.abs()) : src;
+      final mp = widget.service.board.get(dst);
       if (mp == null) return null;
 
       return mp.piece;
     } else {
       return Piece(Point(0, 0), PieceKind.pawn, (src.x % 2) == 1);
     }
+  }
+
+  void reverse() {
+    _reverse = !_reverse;
+
+    setState(() {});
   }
 
   onCheckmate(dynamic parameter) {
@@ -123,7 +132,8 @@ class _GameState extends State<GameRoute> {
     widget.service.unsubscribe(OrderID.Promote);
     widget.service.unsubscribe(OrderID.Checkmate);
 
-    _board().removeListener(onTurn);
+    final brd = _board();
+    if (brd != null) brd.removeListener(onTurn);
 
     super.dispose();
   }
@@ -140,6 +150,7 @@ class _GameState extends State<GameRoute> {
       });
 
       p1 = widget.service.p1;
+      _reverse = !widget.service.p1;
     }
 
     _board().removeListener(onTurn);
@@ -225,69 +236,78 @@ class _GameState extends State<GameRoute> {
             final width = constraints.maxWidth;
 
             double size = width > height ? height : width;
-            size = size * 0.95;
+            size = size * 0.85;
 
-            return GestureDetector(
-              onTapDown: (TapDownDetails details) {
-                final dst = bg.clickAt(
-                    details.localPosition.dx, details.localPosition.dy);
-                final mm = widget.service.board.get(dst);
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                GestureDetector(
+                  onTapDown: (TapDownDetails details) {
+                    final dst = bg.clickAt(
+                        details.localPosition.dx, details.localPosition.dy);
+                    final mm = widget.service.board.get(dst);
 
-                if (widget.service.playerTurn != p1) return;
+                    if (widget.service.playerTurn != p1) return;
 
-                if (mm != null) {
-                  final pec = mm.piece;
-                  if (pec.p1 == p1) {
-                    // our piece?
-                    // then select it
-                    if (markers[0].points.length >= 0) {
-                      setState(() {
-                        markers[1].points.clear();
-                        markers[0].points.clear();
-                        markers[0].addPoint(<Point>[
-                          dst,
-                        ]);
+                    if (mm != null) {
+                      final pec = mm.piece;
+                      if (pec.p1 == p1) {
+                        // our piece?
+                        // then select it
+                        if (markers[0].points.length >= 0) {
+                          setState(() {
+                            markers[1].points.clear();
+                            markers[0].points.clear();
+                            markers[0].addPoint(<Point>[
+                              dst,
+                            ]);
 
-                        focusid = mm.id;
-                      });
+                            focusid = mm.id;
+                          });
 
-                      widget.service
-                          .possib(mm.id)
-                          .then((HashMap<String, Point> ll) {
-                        markers[1].points.addAll(ll);
-                      }).then((_) {
-                        setState(() {});
-                      });
+                          widget.service
+                              .possib(mm.id)
+                              .then((HashMap<String, Point> ll) {
+                            markers[1].points.addAll(ll);
+                          }).then((_) {
+                            setState(() {});
+                          });
+                        }
+                      } else {
+                        // not our piece? then move there
+                        if (markers[0].points.length > 0) {
+                          widget.service.move(focusid, dst);
+
+                          setState(() {
+                            markers[1].points.clear();
+                            markers[0].points.clear();
+                          });
+                        }
+                      }
+                    } else {
+                      if (markers[0].points.length > 0) {
+                        // print("$dst");
+                        print("$focusid");
+                        widget.service.move(focusid, dst).catchError((e) {
+                          print("error $e");
+                        });
+
+                        setState(() {
+                          markers[1].points.clear();
+                          markers[0].points.clear();
+                        });
+                      }
                     }
-                  } else {
-                    // not our piece? then move there
-                    if (markers[0].points.length > 0) {
-                      widget.service.move(mm.id, dst);
-
-                      setState(() {
-                        markers[1].points.clear();
-                        markers[0].points.clear();
-                      });
-                    }
-                  }
-                } else {
-                  if (markers[0].points.length > 0) {
-                    print("$dst");
-                    widget.service.move(mm.id, dst).catchError((e) {
-                      print("error $e");
-                    });
-
-                    setState(() {
-                      markers[1].points.clear();
-                      markers[0].points.clear();
-                    });
-                  }
-                }
-              },
-              child: CustomPaint(
-                size: Size(size, size),
-                painter: bg,
-              ),
+                  },
+                  child: CustomPaint(
+                    size: Size(size, size),
+                    painter: bg,
+                  ),
+                ),
+                game.Controls(widget.service.board, reverse, widget.goToHub,
+                    widget.service.playerTurn == p1, _isFinished),
+              ],
             );
           },
         ),

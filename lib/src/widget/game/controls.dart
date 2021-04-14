@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
