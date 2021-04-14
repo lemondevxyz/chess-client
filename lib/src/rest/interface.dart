@@ -30,6 +30,7 @@ abstract class BoardService {
 
   Future<HashMap<String, Point>> possib(int id);
   Future<void> move(int id, Point dst);
+  Future<void> castling(int kingid, int rookid);
   Future<void> promote(int id, int type);
   Future<void> leaveGame();
 

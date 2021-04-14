@@ -140,8 +140,8 @@ class _GameState extends State<GameRoute> {
 
   @override
   initState() {
+    print("testing: ${widget.testing}");
     if (!widget.testing) {
-      // widget.service.subscribe(OrderID.Promote, onPromote);
       widget.service.subscribe(OrderID.Done, onDone);
       widget.service.subscribe(OrderID.Checkmate, onCheckmate);
       widget.service.subscribe(OrderID.Turn, (_) {
@@ -250,50 +250,61 @@ class _GameState extends State<GameRoute> {
                     final mm = widget.service.board.get(dst);
 
                     if (widget.service.playerTurn != p1) {
+                      print("not our turn");
                       return;
                     }
 
                     if (mm != null) {
                       final pec = mm.piece;
                       if (pec.p1 == p1) {
-                        // our piece?
-                        // then select it
-                        if (pec.kind == PieceKind.rook ||
-                            pec.kind == PieceKind.king) {
-                          if (focusid != null) {
-                            setState(() {
-                              markers[1].points.clear();
-                              markers[0].points.clear();
-                              markers[0].addPoint(<Point>[
-                                dst,
-                              ]);
+                        // our piece? well are we focused at a previous piece
+                        if (focusid != null) {
+                          print("id $focusid");
+                          final cep = widget.service.board.getByIndex(focusid);
 
-                              focusid = mm.id;
-                            });
-
-                            widget.service
-                                .possib(mm.id)
-                                .then((HashMap<String, Point> ll) {
-                              markers[1].points.addAll(ll);
-                            }).then((_) {
-                              setState(() {});
-                            });
+                          // are they king and rook? then do castling
+                          final ok1 = pec.kind == PieceKind.king &&
+                              cep.kind == PieceKind.rook;
+                          final ok2 = pec.kind == PieceKind.rook &&
+                              cep.kind == PieceKind.king;
+                          if (ok1 || ok2) {
+                            widget.service.castling(focusid, mm.id);
+                            return;
                           }
                         }
+                        // then select it
+                        setState(() {
+                          markers[1].points.clear();
+                          markers[0].points.clear();
+                          markers[0].addPoint(<Point>[
+                            dst,
+                          ]);
+
+                          focusid = mm.id;
+                        });
+
+                        widget.service
+                            .possib(mm.id)
+                            .then((HashMap<String, Point> ll) {
+                          markers[1].points.addAll(ll);
+                        }).then((_) {
+                          setState(() {});
+                        });
                       } else {
                         // not our piece? then move there
-                        if (markers[0].points.length > 0) {
+                        if (focusid != null) {
                           widget.service.move(focusid, dst);
 
                           setState(() {
                             markers[1].points.clear();
                             markers[0].points.clear();
+
+                            focusid = null;
                           });
                         }
                       }
                     } else {
                       if (focusid != null) {
-                        // print("$dst");
                         widget.service.move(focusid, dst).catchError((e) {
                           print("error $e");
                         }).then((_) {

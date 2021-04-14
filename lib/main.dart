@@ -100,7 +100,6 @@ class _AppState extends State<App> {
           textTheme: ButtonTextTheme.primary,
         ),
         focusColor: Colors.deepPurple[200],
-        fontFamily: "Dubai",
       ),
       onGenerateRoute: (RouteSettings settings) {
         return MaterialPageRoute(builder: (BuildContext ctx) {

@@ -11,6 +11,10 @@ import "package:http/http.dart" as http;
 import "dart:convert";
 import "package:websocket/websocket.dart";
 
+bool validID(int id) {
+  return id >= 0 && id <= 31;
+}
+
 // Server is a definition of the server we communicate with.
 class Server implements ServerService {
   final ServerConf conf;
@@ -146,7 +150,7 @@ class Server implements ServerService {
       return Future.error("not your turn");
     }
 
-    if (!(id <= 31 && id >= 0)) {
+    if (!(validID(id))) {
       return Future.error("parameters are invalid");
     }
 
@@ -165,13 +169,32 @@ class Server implements ServerService {
       return Future.error("not your turn");
     }
 
-    if (!(id >= 0 && id <= 31) || dst == null || !dst.valid()) {
+    if (!(validID(id)) || dst == null || !dst.valid()) {
       return Future.error("parameters are invalid");
     }
 
     return _sendCommand(Order(
       OrderID.Move,
       Move(id, dst),
+    ));
+  }
+
+  Future<void> castling(int src, int dst) async {
+    if (!inGame) {
+      return Future.error("not in game");
+    }
+
+    if (p1 != playerTurn) {
+      return Future.error("not your turn");
+    }
+
+    if (!(validID(src)) && !(validID(dst))) {
+      return Future.error("bad parameters");
+    }
+
+    return _sendCommand(Order(
+      OrderID.Castling,
+      Castling(src, dst),
     ));
   }
 
