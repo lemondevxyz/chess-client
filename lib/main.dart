@@ -13,7 +13,7 @@ class Debugging {
 
 rest.Server server = rest.Server(
     rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
-const debug = Debugging.game;
+const debug = Debugging.none;
 
 void main() {
   runApp(App());

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
@@ -107,20 +108,19 @@ class Server implements ServerService {
   bool get p1 => inGame ? _game.p1 : null;
   Board get board => inGame ? _game.board : null;
 
-  Future<List<Point>> possib(int id) async {
-    final c = Completer<List<Point>>();
+  Future<HashMap<String, Point>> possib(int id) async {
+    final c = Completer<HashMap<String, Point>>();
     _postRequest(Server.routes["possib"], jsonEncode(Possible(id, null)))
         .then((body) {
       final json = jsonDecode(body);
-      final ls = <Point>[];
+      final map = <String, Point>{};
 
-      (json["points"] as List<dynamic>).forEach((x) {
-        if (x is Map<String, dynamic>) {
-          ls.add(Point.fromJson(x));
-        }
+      (json["points"] as Map<String, dynamic>)
+          .forEach((String name, dynamic value) {
+        map[name] = Point.fromJson(value);
       });
 
-      c.complete(ls);
+      c.complete(map as HashMap<String, Point>);
     }).catchError((e) {
       c.completeError(e);
     });

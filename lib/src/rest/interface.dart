@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/order/model.dart' as model;
@@ -26,7 +28,7 @@ abstract class BoardService {
   bool get p1;
   bool get playerTurn;
 
-  Future<List<Point>> possib(int id);
+  Future<HashMap<String, Point>> possib(int id);
   Future<void> move(int id, Point dst);
   Future<void> promote(int id, int type);
   Future<void> leaveGame();

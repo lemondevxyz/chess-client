@@ -106,7 +106,6 @@ class BoardGraphics extends CustomPainter {
         markerPoints.forEach((BoardMarker mark) {
           final callback = (Canvas canvas) {
             if (mark.points.containsKey(pnt.toString())) {
-              print("nyes $pnt");
               final paint = Paint()..color = mark.color;
               if (mark.isCircle == true) {
                 final scale =
@@ -134,6 +133,7 @@ class BoardGraphics extends CustomPainter {
           final icon = PieceKind.getIcon(pec.kind);
           final clr = !pec.p1 ? Colors.black : Colors.white;
           final shadowclr = !pec.p1 ? Colors.white : Colors.black;
+          final txtrm = 25;
 
           if (icon != null) {
             final builder = ui.ParagraphBuilder(
@@ -144,15 +144,21 @@ class BoardGraphics extends CustomPainter {
 
             builder.pushStyle(ui.TextStyle(
               color: clr,
-              fontSize: div,
+              fontSize: div - txtrm,
               fontFamily: icon.fontFamily,
             ));
             builder.addText(String.fromCharCode(icon.codePoint));
 
             final para = builder.build();
-            para.layout(ui.ParagraphConstraints(width: div));
+            para.layout(ui.ParagraphConstraints(width: div - txtrm));
 
-            canvas.drawParagraph(para, Offset(minx, miny));
+            canvas.save();
+
+            // canvas.drawPaint(Paint()..color = shadowclr);
+            canvas.drawParagraph(
+                para, Offset(minx + (txtrm / 2), miny + (txtrm / 2)));
+
+            canvas.restore();
           }
         }
 

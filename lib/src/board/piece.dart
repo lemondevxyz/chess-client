@@ -65,12 +65,12 @@ class PieceKind {
 
   static const Map<int, IconData> icons = {
     empty: null,
-    pawn: ChessClient.pawn,
-    bishop: ChessClient.bishop,
-    knight: ChessClient.knight,
-    rook: ChessClient.rook,
-    queen: ChessClient.rook,
-    king: ChessClient.king,
+    pawn: ChessClient.chess_pawn,
+    bishop: ChessClient.chess_bishop,
+    knight: ChessClient.chess_knight,
+    rook: ChessClient.chess_rook,
+    queen: ChessClient.chess_queen,
+    king: ChessClient.chess_king,
   };
 
   String toString() {

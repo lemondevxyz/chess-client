@@ -16,6 +16,10 @@
 ///         Author:    Google
 ///         License:   Apache 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 ///         Homepage:  https://design.google.com/icons/
+/// * Font Awesome 5, Copyright (C) 2016 by Dave Gandy
+///         Author:    Dave Gandy
+///         License:   SIL (https://github.com/FortAwesome/Font-Awesome/blob/master/LICENSE.txt)
+///         Homepage:  http://fortawesome.github.com/Font-Awesome/
 ///
 import 'package:flutter/widgets.dart';
 
@@ -25,18 +29,6 @@ class ChessClient {
   static const _kFontFam = 'ChessClient';
   static const String _kFontPkg = null;
 
-  static const IconData bishop =
-      IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData king =
-      IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData knight =
-      IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData pawn =
-      IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData queen =
-      IconData(0xe804, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData rook =
-      IconData(0xe805, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_back =
       IconData(0xe806, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData swap_vert =
@@ -51,4 +43,16 @@ class ChessClient {
       IconData(0xe80b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData restore =
       IconData(0xe80c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chess_bishop =
+      IconData(0xf43a, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chess_king =
+      IconData(0xf43f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chess_knight =
+      IconData(0xf441, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chess_pawn =
+      IconData(0xf443, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chess_queen =
+      IconData(0xf445, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chess_rook =
+      IconData(0xf447, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

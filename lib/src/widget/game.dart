@@ -1,4 +1,6 @@
 // Our widgets
+import 'dart:collection';
+
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/board/utils.dart' as utils;
@@ -25,12 +27,14 @@ class GameRoute extends StatefulWidget {
 class _GameState extends State<GameRoute> {
   Board brd = Board();
   bool _isFinished = false;
-  Object redrawObject;
   bool checkmate;
   bool p1;
+  int focusid;
 
   final markers = <game.BoardMarker>[
-    game.BoardMarker(Colors.red),
+    game.BoardMarker(Colors.blue),
+    game.BoardMarker(Colors.purple,
+        drawOverPiece: true, isCircle: true, circlePercentage: 0.5),
   ];
 
   Piece getPiece(Point src) {
@@ -66,9 +70,7 @@ class _GameState extends State<GameRoute> {
 
     brd.addListener(onTurn);
 
-    setState(() {
-      redrawObject = Object();
-    });
+    setState(() {});
 
     if (!(parameter is model.Done)) throw "bad parameter for done";
     final d = parameter as model.Done;
@@ -158,24 +160,14 @@ class _GameState extends State<GameRoute> {
     }
   }
 
-  bool _ourTurn() {
-    if (widget.testing) {
-      return true;
-    } else {
-      if (!_isFinished)
-        return p1 == widget.service.playerTurn;
-      else // only meant for analysis, therefore board cannot be modified
-        return false;
-    }
-  }
-
   onTurn() {
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    //final bg = game.BoardGraphics(Colors.white, Colors.blueGrey, markers, getPiece);
+    final bg =
+        game.BoardGraphics(Colors.white, Colors.blueGrey, markers, getPiece);
 
     return Scaffold(
       appBar: AppBar(
@@ -228,15 +220,76 @@ class _GameState extends State<GameRoute> {
       ),
       body: Center(
         child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) => Column(
-            children: <Widget>[
-              CustomPaint(
-                size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: game.BoardGraphics(
-                    Colors.white, Colors.blue, markers, getPiece),
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final height = constraints.maxHeight;
+            final width = constraints.maxWidth;
+
+            double size = width > height ? height : width;
+            size = size * 0.95;
+
+            return GestureDetector(
+              onTapDown: (TapDownDetails details) {
+                final dst = bg.clickAt(
+                    details.localPosition.dx, details.localPosition.dy);
+                final mm = widget.service.board.get(dst);
+
+                if (widget.service.playerTurn != p1) return;
+
+                if (mm != null) {
+                  final pec = mm.piece;
+                  if (pec.p1 == p1) {
+                    // our piece?
+                    // then select it
+                    if (markers[0].points.length >= 0) {
+                      setState(() {
+                        markers[1].points.clear();
+                        markers[0].points.clear();
+                        markers[0].addPoint(<Point>[
+                          dst,
+                        ]);
+
+                        focusid = mm.id;
+                      });
+
+                      widget.service
+                          .possib(mm.id)
+                          .then((HashMap<String, Point> ll) {
+                        markers[1].points.addAll(ll);
+                      }).then((_) {
+                        setState(() {});
+                      });
+                    }
+                  } else {
+                    // not our piece? then move there
+                    if (markers[0].points.length > 0) {
+                      widget.service.move(mm.id, dst);
+
+                      setState(() {
+                        markers[1].points.clear();
+                        markers[0].points.clear();
+                      });
+                    }
+                  }
+                } else {
+                  if (markers[0].points.length > 0) {
+                    print("$dst");
+                    widget.service.move(mm.id, dst).catchError((e) {
+                      print("error $e");
+                    });
+
+                    setState(() {
+                      markers[1].points.clear();
+                      markers[0].points.clear();
+                    });
+                  }
+                }
+              },
+              child: CustomPaint(
+                size: Size(size, size),
+                painter: bg,
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
