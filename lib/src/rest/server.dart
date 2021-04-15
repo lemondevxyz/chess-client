@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
+import 'package:chess_client/src/board/utils.dart' as utils;
 import 'package:chess_client/src/order/model.dart';
 import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/conf.dart';
@@ -10,10 +11,6 @@ import 'package:chess_client/src/rest/interface.dart';
 import "package:http/http.dart" as http;
 import "dart:convert";
 import "package:websocket/websocket.dart";
-
-bool validID(int id) {
-  return id >= 0 && id <= 31;
-}
 
 // Server is a definition of the server we communicate with.
 class Server implements ServerService {
@@ -150,7 +147,7 @@ class Server implements ServerService {
       return Future.error("not your turn");
     }
 
-    if (!(validID(id))) {
+    if (!(utils.isIDValid(id))) {
       return Future.error("parameters are invalid");
     }
 
@@ -169,7 +166,7 @@ class Server implements ServerService {
       return Future.error("not your turn");
     }
 
-    if (!(validID(id)) || dst == null || !dst.valid()) {
+    if (!(utils.isIDValid(id)) || dst == null || !dst.valid()) {
       return Future.error("parameters are invalid");
     }
 
@@ -188,7 +185,7 @@ class Server implements ServerService {
       return Future.error("not your turn");
     }
 
-    if (!(validID(src)) && !(validID(dst))) {
+    if (!(utils.isIDValid(src)) && !(utils.isIDValid(dst))) {
       return Future.error("bad parameters");
     }
 

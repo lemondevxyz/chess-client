@@ -11,3 +11,4 @@ List<int> getRangePawn(bool p1) =>
     List<int>.generate(8, (i) => p1 ? i + 16 : i + 8, growable: false);
 bool belongsTo(int id, bool p1) => p1 ? id >= 16 : id < 16;
 bool getInversePlayer(bool p1) => !p1;
+bool isIDValid(int id) => id >= 0 && id <= 31;

@@ -1,4 +1,5 @@
 import "package:chess_client/src/board/piece.dart";
+import 'package:chess_client/src/board/utils.dart';
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
@@ -143,7 +144,7 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   // getByIndex returns a piece by it's index
   Piece getByIndex(int id) {
-    if (id >= 0 && id <= 31) throw "id is invalid";
+    if (!isIDValid(id)) throw "id is invalid";
 
     return _data[id];
   }

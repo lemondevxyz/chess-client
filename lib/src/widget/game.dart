@@ -140,7 +140,6 @@ class _GameState extends State<GameRoute> {
 
   @override
   initState() {
-    print("testing: ${widget.testing}");
     if (!widget.testing) {
       widget.service.subscribe(OrderID.Done, onDone);
       widget.service.subscribe(OrderID.Checkmate, onCheckmate);
@@ -249,17 +248,13 @@ class _GameState extends State<GameRoute> {
                         details.localPosition.dx, details.localPosition.dy);
                     final mm = widget.service.board.get(dst);
 
-                    if (widget.service.playerTurn != p1) {
-                      print("not our turn");
-                      return;
-                    }
+                    if (widget.service.playerTurn != p1) return;
 
                     if (mm != null) {
                       final pec = mm.piece;
                       if (pec.p1 == p1) {
                         // our piece? well are we focused at a previous piece
                         if (focusid != null) {
-                          print("id $focusid");
                           final cep = widget.service.board.getByIndex(focusid);
 
                           // are they king and rook? then do castling
@@ -269,6 +264,13 @@ class _GameState extends State<GameRoute> {
                               cep.kind == PieceKind.king;
                           if (ok1 || ok2) {
                             widget.service.castling(focusid, mm.id);
+
+                            setState(() {
+                              markers[1].points.clear();
+                              markers[0].points.clear();
+
+                              focusid = null;
+                            });
                             return;
                           }
                         }
