@@ -22,22 +22,17 @@ class Controls extends StatelessWidget {
     final reset = service.canResetHistory();
 
     IconData turnIcon;
-    if (yourTurn)
-      turnIcon = Icons.check_circle;
-    else
-      turnIcon = Icons.cancel;
-
     Color turnColor;
-    if (yourTurn)
-      turnColor = Colors.green;
-    else
-      turnColor = Colors.red;
-
     String turnTooltip;
-    if (yourTurn)
+    if (yourTurn) {
+      turnIcon = Icons.check_circle;
+      turnColor = Colors.green;
       turnTooltip = "Your turn";
-    else
+    } else {
+      turnIcon = Icons.cancel;
+      turnColor = Colors.red;
       turnTooltip = "Not your turn";
+    }
 
     const around = Spacer(flex: 5);
 
@@ -52,7 +47,7 @@ class Controls extends StatelessWidget {
       height: size,
     );
 
-    final ok = isFinished || true;
+    final ok = isFinished || yourTurn;
 
     return Row(
       children: <Widget>[

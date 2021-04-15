@@ -25,9 +25,10 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   // this is a list of all moves done by the both players
   final _history = <HistoryItem>[];
-  get history => _history.toList(growable: false);
+  List<HistoryItem> get history => _history.toList(growable: false);
   // this represents the last move we moved to
-  int historyLast = 0;
+  int _historyLast = 0;
+  int get historyLast => _historyLast;
 
   Board() {
     const list = <int>[
@@ -73,14 +74,14 @@ class Board with ChangeNotifier implements rest.HistoryService {
     });
   }
 
-  Board duplicate() {
+  Board copy() {
     final brd = Board();
-    brd._data.asMap().forEach((int index, Piece pec) {
+    _data.asMap().forEach((int index, Piece pec) {
       brd._data[index] = pec;
     });
 
-    brd.history.addAll(history);
-    brd.historyLast = historyLast;
+    brd._history.addAll(_history);
+    brd._historyLast = _historyLast;
 
     return brd;
   }
@@ -92,17 +93,19 @@ class Board with ChangeNotifier implements rest.HistoryService {
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     String str = "";
 
-    this._data.asMap().forEach((int index, Piece pec) {
-      if (index != 0) {
-        str += "\n";
-      }
+    for (int x = 0; x < 8; x++) {
+      if (x > 0) str += "\n";
+      for (int y = 0; y < 8; y++) {
+        final pec = get(Point(y, x));
+        if (pec != null) {
+          str += PieceKind.toShortString(pec.piece.kind);
+        } else {
+          str += " ";
+        }
 
-      if (pec != null) {
-        str += PieceKind.toShortString(pec.kind) + " ";
-      } else {
-        str += "  ";
+        str += " ";
       }
-    });
+    }
 
     return str;
   }
@@ -123,7 +126,7 @@ class Board with ChangeNotifier implements rest.HistoryService {
             ? MapPiece(mm.id, mm.piece.copy())
             : MapPiece(id, pec.copy()..pos = pos),
       ));
-      historyLast++;
+      _historyLast++;
 
       if (mm != null) {
         _data[mm.id].pos = Point(-1, -1);
@@ -142,7 +145,7 @@ class Board with ChangeNotifier implements rest.HistoryService {
     history.add(HistoryItem(
         MapPiece(id, pec), MapPiece(id, Piece(pec.pos, kind, pec.p1))));
     _data[id].kind = kind;
-    historyLast++;
+    _historyLast++;
 
     notifyListeners();
   }
@@ -169,7 +172,7 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   // canGoPrev basically checks if player can go back one move in the move history
   bool canGoPrev() {
-    if (historyLast == 0) return false;
+    if (_historyLast == 0) return false;
 
     return true;
   }
@@ -178,9 +181,9 @@ class Board with ChangeNotifier implements rest.HistoryService {
   void goPrev() {
     if (!this.canGoPrev()) return;
 
-    historyLast--;
+    _historyLast--;
 
-    final move = _history[historyLast];
+    final move = _history[_historyLast];
     this._data[move.src.id] = move.src.piece.copy();
 
     if (move.src.id != move.dst.id)
@@ -191,7 +194,7 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   // canGoNext determines if we can do the next move in the move history
   bool canGoNext() {
-    if (historyLast >= (_history.length)) return false;
+    if (_historyLast >= (_history.length)) return false;
 
     return true;
   }
@@ -199,12 +202,12 @@ class Board with ChangeNotifier implements rest.HistoryService {
   void _goNext() {
     if (!this.canGoNext()) return;
 
-    final move = _history[historyLast];
+    final move = _history[_historyLast];
 
     _data[move.src.id] = move.src.piece.copy()..pos = move.dst.piece.pos;
     if (move.src.id != move.dst.id) _data[move.dst.id].pos = Point(-1, -1);
 
-    historyLast++;
+    _historyLast++;
   }
 
   // goNext does the next move in the move history. safe on !canGoNext
@@ -214,14 +217,14 @@ class Board with ChangeNotifier implements rest.HistoryService {
   }
 
   bool canResetHistory() {
-    if (historyLast == _history.length) return false;
+    if (_historyLast == _history.length) return false;
 
     return true;
   }
 
   // resetHistory resets the history the last point. synchronizing the board with the server's board.
   void resetHistory() {
-    for (var i = historyLast; i < _history.length; i++) {
+    for (var i = _historyLast; i < _history.length; i++) {
       _goNext();
     }
 

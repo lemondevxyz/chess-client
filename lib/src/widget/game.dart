@@ -75,17 +75,16 @@ class _GameState extends State<GameRoute> {
 
   onDone(dynamic parameter) {
     widget.service.board.removeListener(onTurn);
-    brd = widget.service.board.duplicate();
+    brd = widget.service.board.copy();
     _isFinished = true;
 
     brd.addListener(onTurn);
-
     rebuild = UniqueKey();
+
     setState(() {});
 
     if (!(parameter is model.Done)) throw "bad parameter for done";
     final d = parameter as model.Done;
-    print("$d");
 
     String text;
     if (d.p1 == widget.service.p1) {
@@ -255,6 +254,8 @@ class _GameState extends State<GameRoute> {
                       return;
                     }
 
+                    if (_isFinished) return;
+
                     Point dst = bg.clickAt(
                         details.localPosition.dx, details.localPosition.dy);
                     final mm = widget.service.board.get(dst);
@@ -263,8 +264,9 @@ class _GameState extends State<GameRoute> {
 
                     if (mm != null) {
                       final pec = mm.piece;
+                      // our piece?
                       if (pec.p1 == p1) {
-                        // our piece? well are we focused at a previous piece
+                        // are we focused at a previous piece?
                         if (focusid != null) {
                           final cep = widget.service.board.getByIndex(focusid);
 
@@ -336,8 +338,12 @@ class _GameState extends State<GameRoute> {
                     painter: bg,
                   ),
                 ),
-                game.Controls(_board(), reverse, widget.goToHub,
-                    widget.service.playerTurn == p1, _isFinished,
+                game.Controls(
+                    _board(),
+                    reverse,
+                    widget.goToHub,
+                    widget.service.playerTurn == p1 && !_isFinished,
+                    _isFinished,
                     key: rebuild),
               ],
             );
