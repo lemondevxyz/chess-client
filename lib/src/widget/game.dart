@@ -32,6 +32,7 @@ class _GameState extends State<GameRoute> {
   bool p1;
   bool _reverse;
   int focusid;
+  Key rebuild = Key("");
 
   final markers = <game.BoardMarker>[
     game.BoardMarker(Colors.blue),
@@ -41,8 +42,8 @@ class _GameState extends State<GameRoute> {
 
   Piece getPiece(Point src) {
     if (!widget.testing) {
-      if (widget.service.board == null) return null;
-      final mp = widget.service.board.get(src);
+      if (_board() == null) return null;
+      final mp = _board().get(src);
       if (mp == null) return null;
 
       return mp.piece;
@@ -79,10 +80,12 @@ class _GameState extends State<GameRoute> {
 
     brd.addListener(onTurn);
 
+    rebuild = UniqueKey();
     setState(() {});
 
     if (!(parameter is model.Done)) throw "bad parameter for done";
     final d = parameter as model.Done;
+    print("$d");
 
     String text;
     if (d.p1 == widget.service.p1) {
@@ -325,8 +328,9 @@ class _GameState extends State<GameRoute> {
                     painter: bg,
                   ),
                 ),
-                game.Controls(widget.service.board, reverse, widget.goToHub,
-                    widget.service.playerTurn == p1, _isFinished),
+                game.Controls(_board(), reverse, widget.goToHub,
+                    widget.service.playerTurn == p1, _isFinished,
+                    key: rebuild),
               ],
             );
           },

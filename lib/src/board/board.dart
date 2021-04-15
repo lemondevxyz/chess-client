@@ -75,7 +75,9 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   Board duplicate() {
     final brd = Board();
-    brd._data.addAll(_data);
+    brd._data.asMap().forEach((int index, Piece pec) {
+      brd._data[index] = pec;
+    });
 
     brd.history.addAll(history);
     brd.historyLast = historyLast;
