@@ -52,7 +52,7 @@ class Controls extends StatelessWidget {
       height: size,
     );
 
-    final ok = isFinished || yourTurn;
+    final ok = isFinished || true;
 
     return Row(
       children: <Widget>[

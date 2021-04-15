@@ -24,7 +24,8 @@ class Board with ChangeNotifier implements rest.HistoryService {
       growable: false);
 
   // this is a list of all moves done by the both players
-  final history = <HistoryItem>[];
+  final _history = <HistoryItem>[];
+  get history => _history.toList(growable: false);
   // this represents the last move we moved to
   int historyLast = 0;
 
@@ -68,7 +69,6 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   Board.fromJson(List<dynamic> json) {
     json.asMap().forEach((int index, dynamic d) {
-      final mm = d as Map<String, dynamic>;
       _data[index] = Piece.fromJson(d);
     });
   }
@@ -113,10 +113,22 @@ class Board with ChangeNotifier implements rest.HistoryService {
     if (!pos.valid()) {
       _data[id].pos = Point(-1, -1);
     } else {
-      final cep = get(pos);
-      if (cep != null) {
-        _data[cep.id].pos = Point(-1, -1);
+      final mm = get(pos);
+
+      final pec = _data[id].copy();
+
+      _history.add(HistoryItem(
+        MapPiece(id, pec),
+        mm != null
+            ? MapPiece(mm.id, mm.piece.copy())
+            : MapPiece(id, pec.copy()..pos = pos),
+      ));
+      historyLast++;
+
+      if (mm != null) {
+        _data[mm.id].pos = Point(-1, -1);
       }
+
       _data[id].pos = pos;
     }
 
@@ -126,7 +138,11 @@ class Board with ChangeNotifier implements rest.HistoryService {
   void setKind(int id, int kind) {
     if (id >= 0 && id <= 31) throw "id out of bounds";
 
-    this._data[id].kind = kind;
+    final pec = _data[id];
+    history.add(HistoryItem(
+        MapPiece(id, pec), MapPiece(id, Piece(pec.pos, kind, pec.p1))));
+    _data[id].kind = kind;
+    historyLast++;
 
     notifyListeners();
   }
@@ -151,7 +167,7 @@ class Board with ChangeNotifier implements rest.HistoryService {
     return _data[id];
   }
 
-  // canGoPrev basically goes back one move in the move history
+  // canGoPrev basically checks if player can go back one move in the move history
   bool canGoPrev() {
     if (historyLast == 0) return false;
 
@@ -164,51 +180,49 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
     historyLast--;
 
-    final move = history[historyLast];
-    Piece pec = move.src.piece.copy();
-    Piece cep = move.dst.piece.copy();
+    final move = _history[historyLast];
+    this._data[move.src.id] = move.src.piece.copy();
 
-    if (cep != null) this.set(move.src.id, cep.pos);
-    if (pec != null) this.set(move.dst.id, pec.pos);
+    if (move.src.id != move.dst.id)
+      this._data[move.dst.id] = move.dst.piece.copy();
+
+    notifyListeners();
   }
 
   // canGoNext determines if we can do the next move in the move history
   bool canGoNext() {
-    if (historyLast >= (history.length)) return false;
+    if (historyLast >= (_history.length)) return false;
 
     return true;
   }
 
-  // goNext does the next move in the move history. safe on !canGoNext
-  void goNext() {
+  void _goNext() {
     if (!this.canGoNext()) return;
 
-    final move = history[historyLast];
+    final move = _history[historyLast];
 
-    final dst = move.dst.piece.pos;
-
-    _data[move.dst.id].pos = Point(-1, -1);
-    set(move.src.id, dst);
+    _data[move.src.id] = move.src.piece.copy()..pos = move.dst.piece.pos;
+    if (move.src.id != move.dst.id) _data[move.dst.id].pos = Point(-1, -1);
 
     historyLast++;
   }
 
+  // goNext does the next move in the move history. safe on !canGoNext
+  void goNext() {
+    _goNext();
+    notifyListeners();
+  }
+
   bool canResetHistory() {
-    if (historyLast == history.length) return false;
+    if (historyLast == _history.length) return false;
 
     return true;
   }
 
+  // resetHistory resets the history the last point. synchronizing the board with the server's board.
   void resetHistory() {
-    for (var i = historyLast; i < history.length; i++) {
-      final move = history[historyLast];
-
-      final dst = move.dst.piece.pos;
-
-      _data[move.dst.id].pos = Point(-1, -1);
-      _data[move.src.id].pos = dst;
-
-      historyLast++;
+    for (var i = historyLast; i < _history.length; i++) {
+      _goNext();
     }
 
     notifyListeners();

@@ -174,7 +174,10 @@ class _GameState extends State<GameRoute> {
   }
 
   onTurn() {
-    setState(() {});
+    setState(() {
+      markers[0].points.clear();
+      markers[1].points.clear();
+    });
   }
 
   @override
@@ -247,6 +250,11 @@ class _GameState extends State<GameRoute> {
               children: <Widget>[
                 GestureDetector(
                   onTapDown: (TapDownDetails details) {
+                    if (_board().historyLast != _board().history.length) {
+                      _board().resetHistory();
+                      return;
+                    }
+
                     Point dst = bg.clickAt(
                         details.localPosition.dx, details.localPosition.dy);
                     final mm = widget.service.board.get(dst);

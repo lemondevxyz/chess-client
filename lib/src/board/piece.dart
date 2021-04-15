@@ -30,6 +30,8 @@ class Point {
   bool valid() => (this.x < 8 && this.x >= 0) && (this.y < 8 && this.y >= 0);
 
   bool equal(Point dst) => dst.x == x && dst.y == y;
+
+  Point copy() => Point(x, y);
 }
 
 class PieceKind {
