@@ -163,6 +163,16 @@ class BoardGraphics extends CustomPainter {
                   offset: Offset(0, shadowoffset * -1),
                   blurRadius: shadowblur,
                 ),
+                Shadow(
+                  color: shadowclr,
+                  offset: Offset(shadowoffset, 0),
+                  blurRadius: shadowblur,
+                ),
+                Shadow(
+                  color: shadowclr,
+                  offset: Offset(shadowoffset * -1, 0),
+                  blurRadius: shadowblur,
+                ),
               ],
             ));
             builder.addText(String.fromCharCode(icon.codePoint));

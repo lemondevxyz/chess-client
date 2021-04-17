@@ -185,7 +185,7 @@ class _GameState extends State<GameRoute> {
     if (widget.testing) {
       return brd;
     } else {
-      if (!_isFinished) {
+      if (!_isFinished && widget.service.board != null) {
         return widget.service.board;
       } else {
         return brd;
@@ -372,6 +372,7 @@ class _GameState extends State<GameRoute> {
                     widget.goToHub,
                     widget.service.playerTurn == p1 && !_isFinished,
                     _isFinished,
+                    disabled: promoteid != null ? true : false,
                     key: rebuild),
               ],
             );

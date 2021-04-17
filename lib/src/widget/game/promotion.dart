@@ -5,33 +5,71 @@ class Promotion extends StatelessWidget {
   final Function(int) promoteCallback;
   final bool p1;
 
-  const Promotion(this.p1, this.promoteCallback, {Key key}) : super(key: key);
+  static double shadowblur = 2.0;
+  static const list = <int>[
+    PieceKind.rook,
+    PieceKind.bishop,
+    PieceKind.knight,
+    PieceKind.queen,
+  ];
+  static const offset = <Offset>[
+    Offset(2.0, 0),
+    Offset(-2.0, 0),
+    Offset(0, 2.0),
+    Offset(0, -2.0),
+  ];
+  final Color iconclr;
+
+  final Color shadowclr;
+
+  const Promotion(this.p1, this.promoteCallback, {Key key})
+      : this.iconclr = p1 ? Colors.white : Colors.black,
+        this.shadowclr = p1 ? Colors.black : Colors.white,
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final list = <Piece>[
-      Piece(Point(-1, -1), PieceKind.rook, p1),
-      Piece(Point(-1, -1), PieceKind.bishop, p1),
-      Piece(Point(-1, -1), PieceKind.knight, p1),
-      Piece(Point(-1, -1), PieceKind.queen, p1),
-    ];
-    final iconclr = p1 ? Colors.white : Colors.black;
-
     return LayoutBuilder(builder: (BuildContext ctx, BoxConstraints box) {
       final size = box.maxWidth / 7;
       return Container(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            for (var pec in list)
-              IconButton(
-                iconSize: size,
-                icon: Icon(
-                  PieceKind.getIcon(pec.kind),
-                  color: iconclr,
+            for (var kind in list)
+              TextButton(
+                child: Text(
+                  //PieceKind.getIcon(pec.kind),
+                  String.fromCharCode(PieceKind.getIcon(kind).codePoint),
+                  style: TextStyle(
+                    color: iconclr,
+                    fontSize: size,
+                    fontFamily: PieceKind.getIcon(kind).fontFamily,
+                    shadows: <Shadow>[
+                      Shadow(
+                        color: shadowclr,
+                        offset: offset[0],
+                        blurRadius: shadowblur,
+                      ),
+                      Shadow(
+                        color: shadowclr,
+                        offset: offset[1],
+                        blurRadius: shadowblur,
+                      ),
+                      Shadow(
+                        color: shadowclr,
+                        offset: offset[2],
+                        blurRadius: shadowblur,
+                      ),
+                      Shadow(
+                        color: shadowclr,
+                        offset: offset[3],
+                        blurRadius: shadowblur,
+                      ),
+                    ],
+                  ),
                 ),
                 onPressed: () {
-                  promoteCallback(pec.kind);
+                  promoteCallback(kind);
                 },
               ),
           ],

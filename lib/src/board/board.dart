@@ -144,11 +144,9 @@ class Board with ChangeNotifier implements rest.HistoryService {
     final pec = _data[id].copy();
     final cep = _data[id].copy();
     cep.kind = kind;
-    print("${_history.length}");
     _history.add(HistoryItem(MapPiece(id, pec.copy()), MapPiece(id, cep)));
     _data[id].kind = kind;
     _historyLast++;
-    print("${_history.length}");
 
     notifyListeners();
   }

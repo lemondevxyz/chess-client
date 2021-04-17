@@ -35,6 +35,7 @@ class Controls extends StatelessWidget {
       turnColor = Colors.red;
       turnTooltip = "Not your turn";
     }
+    if (disabled) turnColor = Theme.of(context).disabledColor;
 
     const around = Spacer(flex: 5);
 
@@ -50,72 +51,90 @@ class Controls extends StatelessWidget {
     );
 
     final ok = isFinished || yourTurn;
+    final wdgtturn = Icon(
+      turnIcon,
+      color: turnColor,
+      size: size,
+    );
+
+    //final clr = Theme.of(context).hoverColor;
 
     return Row(
       children: <Widget>[
         around,
         IconButton(
-          tooltip: "View previous move",
+          tooltip: !disabled ? "View previous move" : null,
           iconSize: size,
           icon: Icon(
             Icons.chevron_left,
-            color: prev && ok
+            color: prev && ok && !disabled
                 ? Theme.of(context).primaryColor
                 : Theme.of(context).disabledColor,
           ),
-          onPressed: () {
-            if (prev && ok) service.goPrev();
-          },
+          onPressed: !disabled
+              ? () {
+                  if (prev && ok) service.goPrev();
+                }
+              : null,
+          //hoverColor: disabled ? Colors.transparent : clr,
         ),
         spacing,
-        Tooltip(
-          message: turnTooltip,
-          child: Icon(
-            turnIcon,
-            color: turnColor,
-            size: size,
-          ),
-        ),
+        if (!disabled)
+          Tooltip(
+            message: turnTooltip,
+            child: wdgtturn,
+          )
+        else
+          wdgtturn,
         spacing,
         IconButton(
-          tooltip: "Reset the board",
+          tooltip: !disabled ? "Reset the board" : null,
           iconSize: size,
           icon: Icon(
             Icons.restore,
-            color: reset && ok
+            color: reset && ok && !disabled
                 ? Theme.of(context).primaryColor
                 : Theme.of(context).disabledColor,
           ),
-          onPressed: () {
-            if (reset && ok) service.resetHistory();
-          },
+          onPressed: !disabled
+              ? () {
+                  if (reset && ok) service.resetHistory();
+                }
+              : null,
+          //hoverColor: disabled ? Colors.transparent : clr,
         ),
         spacing,
         if (reverse != null)
           IconButton(
-            tooltip: "Reverse the board",
+            tooltip: !disabled ? "Reverse the board" : null,
             iconSize: size,
             icon: Icon(
               Icons.swap_vert,
             ),
             color: Theme.of(context).primaryColor,
-            onPressed: () {
-              if (reverse != null) reverse();
-            },
+            onPressed: !disabled
+                ? () {
+                    if (reverse != null) reverse();
+                  }
+                : null,
+            //hoverColor: disabled ? Colors.transparent : clr,
           ),
         spacing,
         IconButton(
-          tooltip: "View next move",
           iconSize: size,
           icon: Icon(
             Icons.chevron_right,
-            color: next && ok
+            color: next && ok && !disabled
                 ? Theme.of(context).primaryColor
                 : Theme.of(context).disabledColor,
           ),
-          onPressed: () {
-            if (next && ok) service.goNext();
-          },
+          onPressed: !disabled
+              ? () {
+                  if (next && ok) service.goNext();
+                }
+              : null,
+          tooltip: !disabled ? "View next move" : null,
+          //hoverColor: disabled ? Colors.transparent : clr,
         ),
         around,
       ],
