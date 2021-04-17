@@ -139,13 +139,16 @@ class Board with ChangeNotifier implements rest.HistoryService {
   }
 
   void setKind(int id, int kind) {
-    if (id >= 0 && id <= 31) throw "id out of bounds";
+    if (!isIDValid(id)) throw "id out of bounds";
 
-    final pec = _data[id];
-    history.add(HistoryItem(
-        MapPiece(id, pec), MapPiece(id, Piece(pec.pos, kind, pec.p1))));
+    final pec = _data[id].copy();
+    final cep = _data[id].copy();
+    cep.kind = kind;
+    print("${_history.length}");
+    _history.add(HistoryItem(MapPiece(id, pec.copy()), MapPiece(id, cep)));
     _data[id].kind = kind;
     _historyLast++;
+    print("${_history.length}");
 
     notifyListeners();
   }
@@ -179,15 +182,14 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
   // goPrev goes back one move in the move history. safe on !canGoPrev
   void goPrev() {
-    if (!this.canGoPrev()) return;
+    if (!canGoPrev()) return;
 
     _historyLast--;
 
     final move = _history[_historyLast];
-    this._data[move.src.id] = move.src.piece.copy();
+    _data[move.src.id] = move.src.piece.copy();
 
-    if (move.src.id != move.dst.id)
-      this._data[move.dst.id] = move.dst.piece.copy();
+    if (move.src.id != move.dst.id) _data[move.dst.id] = move.dst.piece.copy();
 
     notifyListeners();
   }
@@ -200,12 +202,15 @@ class Board with ChangeNotifier implements rest.HistoryService {
   }
 
   void _goNext() {
-    if (!this.canGoNext()) return;
+    if (!canGoNext()) return;
 
     final move = _history[_historyLast];
 
     _data[move.src.id] = move.src.piece.copy()..pos = move.dst.piece.pos;
-    if (move.src.id != move.dst.id) _data[move.dst.id].pos = Point(-1, -1);
+    if (move.src.id != move.dst.id)
+      _data[move.dst.id].pos = Point(-1, -1);
+    else
+      _data[move.src.id].kind = move.dst.piece.kind;
 
     _historyLast++;
   }

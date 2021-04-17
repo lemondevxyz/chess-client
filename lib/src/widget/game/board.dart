@@ -61,7 +61,9 @@ class BoardGraphics extends CustomPainter {
   final Piece Function(Point src) getPiece;
   final bool reverse;
 
-  double div;
+  String promote;
+
+  double div = 0.0;
 
   BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece,
       {this.reverse = false});

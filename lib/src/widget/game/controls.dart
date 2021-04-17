@@ -9,10 +9,11 @@ class Controls extends StatelessWidget {
   final Function() goToHub;
   final bool yourTurn;
   final bool isFinished;
+  final bool disabled;
 
   const Controls(
       this.service, this.reverse, this.goToHub, this.yourTurn, this.isFinished,
-      {Key key})
+      {this.disabled = false, Key key})
       : super(key: key);
 
   @override
@@ -28,7 +29,8 @@ class Controls extends StatelessWidget {
       turnIcon = Icons.check_circle;
       turnColor = Colors.green;
       turnTooltip = "Your turn";
-    } else {
+    }
+    if (!yourTurn || disabled) {
       turnIcon = Icons.cancel;
       turnColor = Colors.red;
       turnTooltip = "Not your turn";

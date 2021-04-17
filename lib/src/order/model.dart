@@ -97,18 +97,18 @@ class Promotion {
 }
 
 class Promote {
-  final int type;
+  final int kind;
   final int id;
 
-  Promote(this.id, this.type);
+  Promote(this.id, this.kind);
 
   Promote.fromJson(Map<String, dynamic> json)
       : id = json["id"],
-        type = json["type"] as int;
+        kind = json["kind"] as int;
 
   Map<String, dynamic> toJson() => {
         "id": id,
-        "type": type,
+        "kind": kind,
       };
 }
 

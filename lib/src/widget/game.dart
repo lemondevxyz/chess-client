@@ -1,5 +1,6 @@
 // Our widgets
 import 'dart:collection';
+import 'dart:ui';
 
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
@@ -9,6 +10,7 @@ import 'package:chess_client/src/order/order.dart';
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/game/controls.dart' as game;
+import 'package:chess_client/src/widget/game/promotion.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
 
@@ -27,18 +29,18 @@ class GameRoute extends StatefulWidget {
 
 class _GameState extends State<GameRoute> {
   Board brd = Board();
+
   bool _isFinished = false;
   bool checkmate;
   bool p1;
   bool _reverse;
+
   int focusid;
+  int promoteid;
+
   Key rebuild = Key("");
 
-  final markers = <game.BoardMarker>[
-    game.BoardMarker(Colors.blue),
-    game.BoardMarker(Colors.purple,
-        drawOverPiece: true, isCircle: true, circlePercentage: 0.5),
-  ];
+  final markers = <game.BoardMarker>[];
 
   Piece getPiece(Point src) {
     if (!widget.testing) {
@@ -70,6 +72,24 @@ class _GameState extends State<GameRoute> {
       markers[0].addPoint(<Point>[king.pos]);
 
       checkmate = c.p1;
+    });
+  }
+
+  onPromote(dynamic d) {
+    if (!(d is model.Promote)) throw "dynamic is not of type model.Promote";
+
+    final pro = d as model.Promote;
+    setState(() {
+      promoteid = pro.id;
+    });
+  }
+
+  onTurn() {
+    setState(() {
+      if (markers.length > 2) {
+        markers[0].points.clear();
+        markers[1].points.clear();
+      }
     });
   }
 
@@ -149,6 +169,7 @@ class _GameState extends State<GameRoute> {
         onTurn();
         checkmate = false;
       });
+      widget.service.subscribe(OrderID.Promote, onPromote);
 
       p1 = widget.service.p1;
       _reverse = !widget.service.p1;
@@ -172,15 +193,18 @@ class _GameState extends State<GameRoute> {
     }
   }
 
-  onTurn() {
-    setState(() {
-      markers[0].points.clear();
-      markers[1].points.clear();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (markers.length == 0) {
+      final pri = Theme.of(context).primaryColor;
+
+      markers.add(game.BoardMarker(pri));
+      markers.add(
+        game.BoardMarker(pri.withOpacity(0.54),
+            drawOverPiece: true, isCircle: true, circlePercentage: 0.5),
+      );
+    }
+
     final bg = game.BoardGraphics(
         Colors.white, Colors.blueGrey, markers, getPiece,
         reverse: _reverse);
@@ -243,101 +267,105 @@ class _GameState extends State<GameRoute> {
             double size = width > height ? height : width;
             size = size * 0.85;
 
-            return Column(
+            final brdwidget = GestureDetector(
+              onTapDown: (TapDownDetails details) {
+                if (_board().historyLast != _board().history.length) {
+                  _board().resetHistory();
+                  return;
+                }
+
+                if (_isFinished) return;
+
+                if (promoteid != null) return;
+
+                Point dst = bg.clickAt(
+                    details.localPosition.dx, details.localPosition.dy);
+                final mm = widget.service.board.get(dst);
+
+                if (widget.service.playerTurn != p1) return;
+
+                if (mm != null) {
+                  final pec = mm.piece;
+                  // our piece?
+                  if (pec.p1 == p1) {
+                    // are we focused at a previous piece?
+                    if (focusid != null) {
+                      final cep = widget.service.board.getByIndex(focusid);
+
+                      // are they king and rook? then do castling
+                      final ok1 = pec.kind == PieceKind.king &&
+                          cep.kind == PieceKind.rook;
+                      final ok2 = pec.kind == PieceKind.rook &&
+                          cep.kind == PieceKind.king;
+                      if (ok1 || ok2) {
+                        widget.service.castling(focusid, mm.id);
+
+                        setState(() {
+                          markers[1].points.clear();
+                          markers[0].points.clear();
+
+                          focusid = null;
+                        });
+                        return;
+                      }
+                    }
+                    // then select it
+                    setState(() {
+                      markers[1].points.clear();
+                      markers[0].points.clear();
+                      markers[0].addPoint(<Point>[
+                        dst,
+                      ]);
+
+                      focusid = mm.id;
+                    });
+
+                    widget.service
+                        .possib(mm.id)
+                        .then((HashMap<String, Point> ll) {
+                      markers[1].points.addAll(ll);
+                    }).then((_) {
+                      setState(() {});
+                    });
+                  } else {
+                    // not our piece? then move there
+                    if (focusid != null) {
+                      widget.service.move(focusid, dst);
+
+                      setState(() {
+                        markers[1].points.clear();
+                        markers[0].points.clear();
+
+                        focusid = null;
+                      });
+                    }
+                  }
+                } else {
+                  if (focusid != null) {
+                    widget.service.move(focusid, dst).catchError((e) {
+                      print("error $e");
+                    }).then((_) {
+                      focusid = null;
+                    });
+
+                    setState(() {
+                      markers[1].points.clear();
+                      markers[0].points.clear();
+                    });
+                  }
+                }
+              },
+              child: CustomPaint(
+                size: Size(size, size),
+                painter: bg,
+              ),
+            );
+
+            Widget wdgt = Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                GestureDetector(
-                  onTapDown: (TapDownDetails details) {
-                    if (_board().historyLast != _board().history.length) {
-                      _board().resetHistory();
-                      return;
-                    }
-
-                    if (_isFinished) return;
-
-                    Point dst = bg.clickAt(
-                        details.localPosition.dx, details.localPosition.dy);
-                    final mm = widget.service.board.get(dst);
-
-                    if (widget.service.playerTurn != p1) return;
-
-                    if (mm != null) {
-                      final pec = mm.piece;
-                      // our piece?
-                      if (pec.p1 == p1) {
-                        // are we focused at a previous piece?
-                        if (focusid != null) {
-                          final cep = widget.service.board.getByIndex(focusid);
-
-                          // are they king and rook? then do castling
-                          final ok1 = pec.kind == PieceKind.king &&
-                              cep.kind == PieceKind.rook;
-                          final ok2 = pec.kind == PieceKind.rook &&
-                              cep.kind == PieceKind.king;
-                          if (ok1 || ok2) {
-                            widget.service.castling(focusid, mm.id);
-
-                            setState(() {
-                              markers[1].points.clear();
-                              markers[0].points.clear();
-
-                              focusid = null;
-                            });
-                            return;
-                          }
-                        }
-                        // then select it
-                        setState(() {
-                          markers[1].points.clear();
-                          markers[0].points.clear();
-                          markers[0].addPoint(<Point>[
-                            dst,
-                          ]);
-
-                          focusid = mm.id;
-                        });
-
-                        widget.service
-                            .possib(mm.id)
-                            .then((HashMap<String, Point> ll) {
-                          markers[1].points.addAll(ll);
-                        }).then((_) {
-                          setState(() {});
-                        });
-                      } else {
-                        // not our piece? then move there
-                        if (focusid != null) {
-                          widget.service.move(focusid, dst);
-
-                          setState(() {
-                            markers[1].points.clear();
-                            markers[0].points.clear();
-
-                            focusid = null;
-                          });
-                        }
-                      }
-                    } else {
-                      if (focusid != null) {
-                        widget.service.move(focusid, dst).catchError((e) {
-                          print("error $e");
-                        }).then((_) {
-                          focusid = null;
-                        });
-
-                        setState(() {
-                          markers[1].points.clear();
-                          markers[0].points.clear();
-                        });
-                      }
-                    }
-                  },
-                  child: CustomPaint(
-                    size: Size(size, size),
-                    painter: bg,
-                  ),
-                ),
+                brdwidget,
                 game.Controls(
                     _board(),
                     reverse,
@@ -345,6 +373,36 @@ class _GameState extends State<GameRoute> {
                     widget.service.playerTurn == p1 && !_isFinished,
                     _isFinished,
                     key: rebuild),
+              ],
+            );
+            if (promoteid != null) {
+              wdgt = ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                child: wdgt,
+              );
+            }
+
+            return Stack(
+              children: <Widget>[
+                // if promotion
+                wdgt,
+                if (promoteid != null)
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: size,
+                        height: size,
+                        child: game.Promotion(p1, (int kind) {
+                          widget.service.promote(promoteid, kind).then((_) {
+                            setState(() {
+                              promoteid = null;
+                            });
+                          });
+                        }),
+                      ),
+                    ),
+                  )
               ],
             );
           },
