@@ -1,4 +1,4 @@
-import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/model/order.dart' as order;
 import 'package:flutter/material.dart';
 import 'package:chess_client/src/widget/game.dart' as widget;
 import 'package:chess_client/src/widget/hub.dart' as widget;
@@ -70,15 +70,15 @@ class _AppState extends State<App> {
   }
 
   _AppState() {
-    server.unsubscribe(OrderID.Credentials);
-    server.unsubscribe(OrderID.Disconnect);
-    server.unsubscribe(OrderID.Game);
-    server.unsubscribe(OrderID.Done);
+    server.unsubscribe(order.OrderID.Credentials);
+    server.unsubscribe(order.OrderID.Disconnect);
+    server.unsubscribe(order.OrderID.Game);
+    server.unsubscribe(order.OrderID.Done);
 
-    server.subscribe(OrderID.Credentials, onConnect);
-    server.subscribe(OrderID.Disconnect, onDisconnect);
-    server.subscribe(OrderID.Game, onGame);
-    server.subscribe(OrderID.Done, onDone);
+    server.subscribe(order.OrderID.Credentials, onConnect);
+    server.subscribe(order.OrderID.Disconnect, onDisconnect);
+    server.subscribe(order.OrderID.Game, onGame);
+    server.subscribe(order.OrderID.Done, onDone);
   }
 
   void onConnect(_) => goToHub();

@@ -4,8 +4,7 @@ import 'dart:collection';
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/board/utils.dart' as utils;
-import 'package:chess_client/src/order/model.dart';
-import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/conf.dart';
 import 'package:chess_client/src/rest/interface.dart';
 import "package:http/http.dart" as http;
@@ -17,14 +16,14 @@ class Server implements ServerService {
   final ServerConf conf;
 
   // InviteService
-  final _invites = List<Invite>.empty(growable: true);
+  final _invites = List<order.Invite>.empty(growable: true);
   final _inviteTimers = List<Timer>.empty(growable: true);
 
-  List<Invite> get invites => _invites.toList(growable: false);
+  List<order.Invite> get invites => _invites.toList(growable: false);
   Future<void> invite(String id) async {
     if (!inGame) {
       return _postRequest(
-          Server.routes["invite"], jsonEncode(Invite(id).toJson()));
+          Server.routes["invite"], jsonEncode(order.Invite(id).toJson()));
     }
 
     return Future.error("in game");
@@ -37,7 +36,7 @@ class Server implements ServerService {
     });
     _inviteTimers.clear();
 
-    _notify(OrderID.Invite, null);
+    _notify(order.OrderID.Invite, null);
   }
 
   Future<void> acceptInvite(String id) async {
@@ -45,7 +44,7 @@ class Server implements ServerService {
       final fut = Completer<void>();
       this
           ._postRequest(
-              Server.routes["accept"], jsonEncode(Invite(id).toJson()))
+              Server.routes["accept"], jsonEncode(order.Invite(id).toJson()))
           .then((_) {
         fut.complete();
         cleanInvite();
@@ -74,28 +73,24 @@ class Server implements ServerService {
   }
 
   // SubscribeService
-  final Map<OrderID, Function(dynamic)> _event = {};
-  void subscribe(OrderID id, Function(dynamic) callback) {
+  final Map<order.OrderID, Function(dynamic)> _event = {};
+  void subscribe(order.OrderID id, Function(dynamic) callback) {
     if (callback == null) throw "callback is null";
-    /*
-    if (_event.containsKey(id))
-      throw "there's already a subscribed function to this id";
-      */
 
     _event[id] = callback;
   }
 
-  void unsubscribe(OrderID id) {
+  void unsubscribe(order.OrderID id) {
     if (!_event.containsKey(id)) return;
 
     _event.remove(id);
   }
 
-  bool isSubscribed(OrderID id) {
+  bool isSubscribed(order.OrderID id) {
     return _event.containsKey(id);
   }
 
-  void _notify(OrderID id, dynamic value) {
+  void _notify(order.OrderID id, dynamic value) {
     if (!_event.containsKey(id)) throw "no subscription attached to this id";
 
     _event[id](value);
@@ -103,7 +98,7 @@ class Server implements ServerService {
 
   // BoardSystem
   bool _playerTurn;
-  Game _game;
+  order.Game _game;
   bool get playerTurn => _playerTurn;
   bool get inGame => _game != null;
   bool get p1 => inGame ? _game.p1 : null;
@@ -111,7 +106,7 @@ class Server implements ServerService {
 
   Future<HashMap<String, Point>> possib(int id) async {
     final c = Completer<HashMap<String, Point>>();
-    _postRequest(Server.routes["possib"], jsonEncode(Possible(id, null)))
+    _postRequest(Server.routes["possib"], jsonEncode(order.Possible(id, null)))
         .then((body) {
       final json = jsonDecode(body);
       final map = <String, Point>{};
@@ -132,9 +127,9 @@ class Server implements ServerService {
   Future<void> leaveGame() async {
     if (!inGame) return Future.error("not in game");
 
-    return _sendCommand(Order(
-      OrderID.Done,
-      Done(p1),
+    return _sendCommand(order.Order(
+      order.OrderID.Done,
+      order.Done(p1),
     ));
   }
 
@@ -151,9 +146,9 @@ class Server implements ServerService {
       return Future.error("parameters are invalid");
     }
 
-    return _sendCommand(Order(
-      OrderID.Promote,
-      Promote(id, type),
+    return _sendCommand(order.Order(
+      order.OrderID.Promote,
+      order.Promote(id, type),
     ));
   }
 
@@ -170,9 +165,9 @@ class Server implements ServerService {
       return Future.error("parameters are invalid");
     }
 
-    return _sendCommand(Order(
-      OrderID.Move,
-      Move(id, dst),
+    return _sendCommand(order.Order(
+      order.OrderID.Move,
+      order.Move(id, dst),
     ));
   }
 
@@ -189,9 +184,9 @@ class Server implements ServerService {
       return Future.error("bad parameters");
     }
 
-    return _sendCommand(Order(
-      OrderID.Castling,
-      Castling(src, dst),
+    return _sendCommand(order.Order(
+      order.OrderID.Castling,
+      order.Castling(src, dst),
     ));
   }
 
@@ -204,7 +199,7 @@ class Server implements ServerService {
   }
 
   // WebsocketService
-  Credentials _credentials;
+  order.Credentials _credentials;
   String get publicId => _credentials.publicId;
   WebSocket _socket;
 
@@ -239,11 +234,11 @@ class Server implements ServerService {
       ws.stream.listen((data) {
         final map = jsonDecode(data);
         if (map is Map<String, dynamic>) {
-          final o = Order.fromJson(map);
+          final o = order.Order.fromJson(map);
           switch (o.id) {
-            case OrderID.Credentials:
+            case order.OrderID.Credentials:
               try {
-                final cred = Credentials.fromJson(o.obj);
+                final cred = order.Credentials.fromJson(o.obj);
 
                 _credentials = cred;
                 _headers["Authorization"] = "Bearer ${cred.token}";
@@ -251,45 +246,45 @@ class Server implements ServerService {
                 print("listen.credentials: $e");
               }
               break;
-            case OrderID.Invite:
+            case order.OrderID.Invite:
               try {
-                final inv = Invite.fromJson(o.obj);
+                final inv = order.Invite.fromJson(o.obj);
                 _inviteReceiver(inv);
               } catch (e) {
                 print("listen.invite: $e");
               }
               break;
-            case OrderID.Move:
+            case order.OrderID.Move:
               try {
-                final move = Move.fromJson(o.obj);
+                final move = order.Move.fromJson(o.obj);
 
                 board.set(move.id, move.dst);
               } catch (e) {
                 print("listen.move: $e");
               }
               break;
-            case OrderID.Promote:
+            case order.OrderID.Promote:
               try {
-                final promote = Promote.fromJson(o.obj);
+                final promote = order.Promote.fromJson(o.obj);
 
-                _notify(OrderID.Promote, promote);
+                _notify(order.OrderID.Promote, promote);
               } catch (e) {
                 print("listen.promote: $e");
               }
               break;
-            case OrderID.Promotion:
+            case order.OrderID.Promotion:
               try {
-                final promotion = Promotion.fromJson(o.obj);
+                final promotion = order.Promotion.fromJson(o.obj);
 
                 board.setKind(promotion.id, promotion.kind);
               } catch (e) {
                 print("listen.promotion: $e");
               }
               break;
-            case OrderID.Castling:
+            case order.OrderID.Castling:
               // trust server data
               try {
-                final move = Castling.fromJson(o.obj);
+                final move = order.Castling.fromJson(o.obj);
 
                 final king = board.getByIndex(move.src);
                 final rook = board.getByIndex(move.dst);
@@ -315,36 +310,36 @@ class Server implements ServerService {
                 print("listen.castling: $e");
               }
               break;
-            case OrderID.Turn:
+            case order.OrderID.Turn:
               try {
-                final turn = Turn.fromJson(o.obj);
+                final turn = order.Turn.fromJson(o.obj);
 
                 _playerTurn = turn.p1;
-                _notify(OrderID.Turn, turn);
+                _notify(order.OrderID.Turn, turn);
               } catch (e) {
                 print("listen.turn: $e");
               }
               break;
-            case OrderID.Checkmate:
+            case order.OrderID.Checkmate:
               try {
-                final checkmate = Turn.fromJson(o.obj);
+                final checkmate = order.Turn.fromJson(o.obj);
 
-                _notify(OrderID.Checkmate, checkmate);
+                _notify(order.OrderID.Checkmate, checkmate);
               } catch (e) {
                 print("listen.checkmate: $e");
               }
               break;
-            case OrderID.Game:
+            case order.OrderID.Game:
               try {
-                final g = Game.fromJson(o.obj);
+                final g = order.Game.fromJson(o.obj);
                 _gameReceiver(g);
               } catch (e) {
                 print("listen.game: $e");
               }
               break;
-            case OrderID.Done:
+            case order.OrderID.Done:
               try {
-                final d = Done.fromJson(o.obj);
+                final d = order.Done.fromJson(o.obj);
                 _doneReceiver(d);
               } catch (e) {
                 print("listen.done: $e");
@@ -355,12 +350,12 @@ class Server implements ServerService {
 
       ws.done.then((_) {
         //print("websocket done ${ws.closeCode}, ${ws.closeReason}");
-        _notify(OrderID.Disconnect, null);
+        _notify(order.OrderID.Disconnect, null);
         _clean();
       });
 
       try {
-        _notify(OrderID.Credentials, null);
+        _notify(order.OrderID.Credentials, null);
       } catch (e) {
         c.completeError(e);
       }
@@ -433,17 +428,19 @@ class Server implements ServerService {
         if (r.statusCode != 200) {
           c.completeError("${r.body}");
         } else {
+          print("post statuscode ${r.body}");
           c.complete(r.body);
         }
       });
     } catch (e) {
+      print("post ee $e");
       c.completeError(e);
     }
 
     return c.future;
   }
 
-  Future<void> _sendCommand(Order cmd) async {
+  Future<void> _sendCommand(order.Order cmd) async {
     String json = "";
     try {
       json = jsonEncode(cmd);
@@ -461,26 +458,26 @@ class Server implements ServerService {
     cleanInvite();
   }
 
-  void _inviteReceiver(Invite i) {
+  void _inviteReceiver(order.Invite i) {
     _invites.add(i);
 
-    _notify(OrderID.Invite, null);
+    _notify(order.OrderID.Invite, null);
 
-    _inviteTimers.add(Timer(Invite.expiry, () {
+    _inviteTimers.add(Timer(order.Invite.expiry, () {
       if (_invites.length > 0) {
         _invites.removeLast();
       }
     }));
   }
 
-  void _gameReceiver(Game g) {
+  void _gameReceiver(order.Game g) {
     _game = g;
-    _notify(OrderID.Game, null);
+    _notify(order.OrderID.Game, null);
     // no need to clear invite. acceptInvite does it automatically.
   }
 
-  void _doneReceiver(Done d) {
-    _notify(OrderID.Done, d);
+  void _doneReceiver(order.Done d) {
+    _notify(order.OrderID.Done, d);
     _game = null;
   }
 

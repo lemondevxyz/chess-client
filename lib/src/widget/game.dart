@@ -5,8 +5,7 @@ import 'dart:ui';
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/board/utils.dart' as utils;
-import 'package:chess_client/src/order/model.dart' as model;
-import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/game/controls.dart' as game;
@@ -61,12 +60,12 @@ class _GameState extends State<GameRoute> {
   }
 
   onCheckmate(dynamic parameter) {
-    if (!(parameter is model.Turn)) {
+    if (!(parameter is order.Turn)) {
       print("checkmate has bad struct");
       return;
     }
 
-    final c = parameter as model.Turn;
+    final c = parameter as order.Turn;
     setState(() {
       final king = brd.getByIndex(utils.getKing(p1));
       markers[0].addPoint(<Point>[king.pos]);
@@ -76,9 +75,9 @@ class _GameState extends State<GameRoute> {
   }
 
   onPromote(dynamic d) {
-    if (!(d is model.Promote)) throw "dynamic is not of type model.Promote";
+    if (!(d is order.Promote)) throw "dynamic is not of type model.Promote";
 
-    final pro = d as model.Promote;
+    final pro = d as order.Promote;
     setState(() {
       promoteid = pro.id;
     });
@@ -103,8 +102,8 @@ class _GameState extends State<GameRoute> {
 
     setState(() {});
 
-    if (!(parameter is model.Done)) throw "bad parameter for done";
-    final d = parameter as model.Done;
+    if (!(parameter is order.Done)) throw "bad parameter for done";
+    final d = parameter as order.Done;
 
     String text;
     if (d.p1 == widget.service.p1) {
@@ -149,10 +148,10 @@ class _GameState extends State<GameRoute> {
 
   @override
   dispose() {
-    widget.service.unsubscribe(OrderID.Done);
-    widget.service.unsubscribe(OrderID.Turn);
-    widget.service.unsubscribe(OrderID.Promote);
-    widget.service.unsubscribe(OrderID.Checkmate);
+    widget.service.unsubscribe(order.OrderID.Done);
+    widget.service.unsubscribe(order.OrderID.Turn);
+    widget.service.unsubscribe(order.OrderID.Promote);
+    widget.service.unsubscribe(order.OrderID.Checkmate);
 
     final brd = _board();
     if (brd != null) brd.removeListener(onTurn);
@@ -163,13 +162,13 @@ class _GameState extends State<GameRoute> {
   @override
   initState() {
     if (!widget.testing) {
-      widget.service.subscribe(OrderID.Done, onDone);
-      widget.service.subscribe(OrderID.Checkmate, onCheckmate);
-      widget.service.subscribe(OrderID.Turn, (_) {
+      widget.service.subscribe(order.OrderID.Done, onDone);
+      widget.service.subscribe(order.OrderID.Checkmate, onCheckmate);
+      widget.service.subscribe(order.OrderID.Turn, (_) {
         onTurn();
         checkmate = false;
       });
-      widget.service.subscribe(OrderID.Promote, onPromote);
+      widget.service.subscribe(order.OrderID.Promote, onPromote);
 
       p1 = widget.service.p1;
       _reverse = !widget.service.p1;
@@ -239,7 +238,7 @@ class _GameState extends State<GameRoute> {
                         onPressed: () {
                           Navigator.of(context).pop();
                           if (!_isFinished) {
-                            widget.service.unsubscribe(OrderID.Done);
+                            widget.service.unsubscribe(order.OrderID.Done);
                             widget.service.leaveGame();
                           }
 

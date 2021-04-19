@@ -2,8 +2,7 @@ import 'dart:collection';
 
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
-import 'package:chess_client/src/order/model.dart' as model;
-import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/model/order.dart' as order;
 
 abstract class ServerService
     implements
@@ -53,13 +52,13 @@ abstract class InviteService {
   Future<List<String>> getAvaliableUsers();
   Future<void> acceptInvite(String id);
   Future<void> invite(String id);
-  List<model.Invite> get invites;
+  List<order.Invite> get invites;
 }
 
 abstract class SubscribeService {
-  void subscribe(OrderID id, Function(dynamic) callback);
-  void unsubscribe(OrderID id);
-  bool isSubscribed(OrderID id);
+  void subscribe(order.OrderID id, Function(dynamic) callback);
+  void unsubscribe(order.OrderID id);
+  bool isSubscribed(order.OrderID id);
 }
 
 abstract class WebsocketService {

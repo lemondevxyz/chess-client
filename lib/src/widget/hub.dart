@@ -1,4 +1,4 @@
-import 'package:chess_client/src/order/order.dart';
+import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
 
@@ -28,8 +28,8 @@ class _HubRouteState extends State<HubRoute> {
 
   @override
   Widget build(BuildContext context) {
-    widget.service.unsubscribe(OrderID.Invite);
-    widget.service.subscribe(OrderID.Invite, onInvite);
+    widget.service.unsubscribe(order.OrderID.Invite);
+    widget.service.subscribe(order.OrderID.Invite, onInvite);
 
     handleClick(String name) {
       switch (name) {
