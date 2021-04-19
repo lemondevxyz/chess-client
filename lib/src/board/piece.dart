@@ -1,4 +1,4 @@
-import 'package:chess_client/chess_client_icons.dart';
+import 'package:chess_client/icons.dart' as icons;
 import 'package:flutter/widgets.dart';
 
 class Point {
@@ -67,14 +67,14 @@ class PieceKind {
     king: "king",
   };
 
-  static const Map<int, IconData> icons = {
+  static final Map<int, IconData> icondata = {
     empty: null,
-    pawn: ChessClient.chess_pawn,
-    bishop: ChessClient.chess_bishop,
-    knight: ChessClient.chess_knight,
-    rook: ChessClient.chess_rook,
-    queen: ChessClient.chess_queen,
-    king: ChessClient.chess_king,
+    pawn: icons.chess_pawn,
+    bishop: icons.chess_bishop,
+    knight: icons.chess_knight,
+    rook: icons.chess_rook,
+    queen: icons.chess_queen,
+    king: icons.chess_king,
   };
 
   String toString() {
@@ -89,7 +89,7 @@ class PieceKind {
   }
 
   static IconData getIcon(int val) {
-    return icons[val];
+    return icondata[val];
   }
 }
 

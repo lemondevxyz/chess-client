@@ -1,5 +1,6 @@
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
+import 'package:chess_client/icons.dart' as icons;
 
 class Controls extends StatelessWidget {
   static double size = 36.0;
@@ -9,11 +10,10 @@ class Controls extends StatelessWidget {
   final Function() goToHub;
   final bool yourTurn;
   final bool isFinished;
-  final bool disabled;
 
   const Controls(
       this.service, this.reverse, this.goToHub, this.yourTurn, this.isFinished,
-      {this.disabled = false, Key key})
+      {Key key})
       : super(key: key);
 
   @override
@@ -26,18 +26,15 @@ class Controls extends StatelessWidget {
     Color turnColor;
     String turnTooltip;
     if (yourTurn) {
-      turnIcon = Icons.check_circle;
+      turnIcon = icons.check_circle;
       turnColor = Colors.green;
       turnTooltip = "Your turn";
     }
-    if (!yourTurn || disabled) {
-      turnIcon = Icons.cancel;
+    if (!yourTurn) {
+      turnIcon = icons.cancel;
       turnColor = Colors.red;
       turnTooltip = "Not your turn";
     }
-    if (disabled) turnColor = Theme.of(context).disabledColor;
-
-    const around = Spacer(flex: 5);
 
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
@@ -57,86 +54,71 @@ class Controls extends StatelessWidget {
       size: size,
     );
 
-    //final clr = Theme.of(context).hoverColor;
-
     return Row(
       children: <Widget>[
-        around,
         IconButton(
-          tooltip: !disabled ? "View previous move" : null,
+          tooltip: "View previous move",
           iconSize: size,
           icon: Icon(
-            Icons.chevron_left,
-            color: prev && ok && !disabled
+            icons.keyboard_arrow_left,
+            color: prev && ok
                 ? Theme.of(context).primaryColor
                 : Theme.of(context).disabledColor,
           ),
-          onPressed: !disabled
-              ? () {
-                  if (prev && ok) service.goPrev();
-                }
-              : null,
+          onPressed: () {
+            if (prev && ok) service.goPrev();
+          },
           //hoverColor: disabled ? Colors.transparent : clr,
         ),
         spacing,
-        if (!disabled)
-          Tooltip(
-            message: turnTooltip,
-            child: wdgtturn,
-          )
-        else
-          wdgtturn,
+        Tooltip(
+          message: turnTooltip,
+          child: wdgtturn,
+        ),
         spacing,
         IconButton(
-          tooltip: !disabled ? "Reset the board" : null,
-          iconSize: size,
-          icon: Icon(
-            Icons.restore,
-            color: reset && ok && !disabled
-                ? Theme.of(context).primaryColor
-                : Theme.of(context).disabledColor,
-          ),
-          onPressed: !disabled
-              ? () {
-                  if (reset && ok) service.resetHistory();
-                }
-              : null,
-          //hoverColor: disabled ? Colors.transparent : clr,
-        ),
+            tooltip: "Reset the board",
+            iconSize: size,
+            icon: Icon(
+              icons.restore,
+              color: reset && ok
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).disabledColor,
+            ),
+            onPressed: () {
+              if (reset && ok) service.resetHistory();
+            }
+            //hoverColor: disabled ? Colors.transparent : clr,
+            ),
         spacing,
         if (reverse != null)
           IconButton(
-            tooltip: !disabled ? "Reverse the board" : null,
+            tooltip: "Reverse the board",
             iconSize: size,
             icon: Icon(
-              Icons.swap_vert,
+              icons.swap_vert,
             ),
             color: Theme.of(context).primaryColor,
-            onPressed: !disabled
-                ? () {
-                    if (reverse != null) reverse();
-                  }
-                : null,
+            onPressed: () {
+              if (reverse != null) reverse();
+            },
             //hoverColor: disabled ? Colors.transparent : clr,
           ),
         spacing,
         IconButton(
           iconSize: size,
           icon: Icon(
-            Icons.chevron_right,
-            color: next && ok && !disabled
+            icons.keyboard_arrow_right,
+            color: next && ok
                 ? Theme.of(context).primaryColor
                 : Theme.of(context).disabledColor,
           ),
-          onPressed: !disabled
-              ? () {
-                  if (next && ok) service.goNext();
-                }
-              : null,
-          tooltip: !disabled ? "View next move" : null,
+          onPressed: () {
+            if (next && ok) service.goNext();
+          },
+          tooltip: "View next move",
           //hoverColor: disabled ? Colors.transparent : clr,
         ),
-        around,
       ],
     );
   }

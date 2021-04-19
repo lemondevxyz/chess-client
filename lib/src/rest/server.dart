@@ -21,10 +21,12 @@ class Server implements ServerService {
   final _inviteTimers = List<Timer>.empty(growable: true);
 
   List<order.Invite> get invites => _invites.toList(growable: false);
-  Future<void> invite(String id) async {
+  Future<void> invite(String id, String platform) async {
     if (!inGame) {
-      return _postRequest(
-          Server.routes["invite"], jsonEncode(order.Invite(id).toJson()));
+      final inv = order.Invite(id);
+      inv.platform = platform;
+
+      return _postRequest(Server.routes["invite"], jsonEncode(inv.toJson()));
     }
 
     return Future.error("in game");
@@ -206,7 +208,7 @@ class Server implements ServerService {
 
   // WebsocketService
   order.Credentials _credentials;
-  String get publicId => _credentials.publicId;
+  model.Profile get profile => _credentials.profile;
   WebSocket _socket;
 
   bool isConnected() {

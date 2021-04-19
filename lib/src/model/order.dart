@@ -1,5 +1,6 @@
 import "package:chess_client/src/board/board.dart";
 import 'package:chess_client/src/board/piece.dart';
+import 'package:chess_client/src/model/model.dart';
 
 // [U] refers to an Update, [C] refers to a Command.
 // While [O] refers to an Update and a Command.
@@ -7,6 +8,7 @@ enum OrderID {
   Empty,
   Credentials, // [U]
   Invite, // [O]
+  Watchable, // [U]
   Game, // [U]
   Move, // [O]
   Possible, // [O]
@@ -40,18 +42,26 @@ class Order {
 
 class Credentials {
   final String token;
-  final String publicId;
+  final Profile profile;
 
-  const Credentials(this.token, this.publicId);
+  const Credentials(this.token, this.profile);
 
   Credentials.fromJson(Map<String, dynamic> json)
       : token = json["token"],
-        publicId = json["public_id"];
+        profile = Profile.fromJson(json["profile"]);
+}
 
-  Map<String, String> toJson() => {
-        "token": token,
-        "public_id": publicId,
-      };
+class Watchable {
+  final Profile p1;
+  final Profile p2;
+  final Board board;
+
+  const Watchable(this.p1, this.p2, this.board);
+
+  Watchable.fromJson(Map<String, dynamic> json)
+      : p1 = Profile.fromJson(json["p1"]),
+        p2 = Profile.fromJson(json["p2"]),
+        board = Board.fromJson(json["board"]);
 }
 
 class Game {
@@ -69,13 +79,20 @@ class Invite {
   // it's a variable cause it's easier to test
   static const expiry = Duration(seconds: 30);
   final String id;
-  // as a command, the server doesn't use this field.
+  // optional parameters
+  String platform;
+  Profile profile;
 
-  const Invite(this.id);
+  Invite(this.id);
 
-  Invite.fromJson(Map<String, dynamic> json) : id = json["id"];
+  Invite.fromJson(Map<String, dynamic> json)
+      : id = json["id"],
+        profile = Profile.fromJson(json["profile"]);
 
-  Map<String, String> toJson() => {"id": id};
+  Map<String, String> toJson() => {
+        "id": id,
+        "platform": platform,
+      };
 }
 
 class Move {

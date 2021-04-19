@@ -45,16 +45,15 @@ dev_dependencies:
 flutter:
   assets:
   # font
-  - assets/fonts/dubai/
-  - assets/fonts/ChessClient.ttf
+  - assets/fonts/icons.ttf
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   # uses-material-design: true
   fonts:
-  - family: ChessClient
+  - family: Icons
     fonts:
-    - asset: assets/fonts/ChessClient.ttf
+    - asset: assets/fonts/icons.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

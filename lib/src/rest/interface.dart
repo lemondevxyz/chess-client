@@ -52,7 +52,7 @@ abstract class HistoryService {
 abstract class InviteService {
   Future<List<model.Profile>> getAvaliableUsers();
   Future<void> acceptInvite(String id);
-  Future<void> invite(String id);
+  Future<void> invite(String id, String platform);
   List<order.Invite> get invites;
 }
 
@@ -63,6 +63,8 @@ abstract class SubscribeService {
 }
 
 abstract class WebsocketService {
+  model.Profile get profile;
+
   Future<void> connect();
   Future<void> disconnect();
   bool isConnected();

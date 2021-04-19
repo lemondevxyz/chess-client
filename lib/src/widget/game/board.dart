@@ -61,8 +61,6 @@ class BoardGraphics extends CustomPainter {
   final Piece Function(Point src) getPiece;
   final bool reverse;
 
-  String promote;
-
   double div = 0.0;
 
   BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece,
@@ -88,7 +86,7 @@ class BoardGraphics extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // well to make the canvas have 1:1 aspect ratio, pick the smaller (width or height), and set it as the size for each piece, square, or circle.
-    final res = size.height > size.width ? size.width : size.height;
+    final res = size.shortestSide;
     div = res / max;
 
     for (int x = 0; x < max; x++) {
@@ -199,5 +197,9 @@ class BoardGraphics extends CustomPainter {
 
   @override
   bool shouldRepaint(BoardGraphics old) =>
-      old.pri != pri || old.sec != sec || old.markerPoints != markerPoints;
+      old.pri != pri ||
+      old.sec != sec ||
+      old.markerPoints != markerPoints ||
+      old.div != div ||
+      old.reverse != reverse;
 }

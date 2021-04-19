@@ -1,6 +1,7 @@
 import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
+import 'package:chess_client/icons.dart' as icons;
 import 'package:flutter/material.dart';
 
 const notificationDuration = Duration(seconds: 3);
@@ -60,6 +61,10 @@ class _HubRouteState extends State<HubRoute> {
                                       subtitle: Text(
                                         profile.platform,
                                       ),
+                                      onTap: () {
+                                        widget.service.invite(
+                                            profile.id, profile.platform);
+                                      },
                                     ),
                                   ],
                                 ),
@@ -70,7 +75,7 @@ class _HubRouteState extends State<HubRoute> {
                     );
                   });
             }).catchError((e) {
-              debugPrint("adsd $e");
+              debugPrint("hub.getAvaliableUsers $e");
             });
 
             break;
@@ -87,6 +92,9 @@ class _HubRouteState extends State<HubRoute> {
         automaticallyImplyLeading: false,
         actions: <Widget>[
           PopupMenuButton<String>(
+            icon: Icon(
+              icons.more_vert,
+            ),
             onSelected: handleClick,
             itemBuilder: (BuildContext context) {
               return {'Invite', 'Disconnect'}.map((String choice) {
@@ -103,11 +111,23 @@ class _HubRouteState extends State<HubRoute> {
         child: ListView(
           children: <Widget>[
             for (var i in widget.service.invites)
-              ListTile(
-                title: Text("${i.id}"),
-                onTap: () {
-                  widget.service.acceptInvite(i.id);
-                },
+              Card(
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      leading: CircleAvatar(
+                        foregroundImage: NetworkImage(i.profile.picture),
+                      ),
+                      title: Text(i.profile.username),
+                      subtitle: Text(
+                        i.profile.platform,
+                      ),
+                      onTap: () {
+                        widget.service.acceptInvite(i.id);
+                      },
+                    ),
+                  ],
+                ),
               ),
           ],
         ),

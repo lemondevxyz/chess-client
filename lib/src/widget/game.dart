@@ -1,7 +1,7 @@
 // Our widgets
 import 'dart:collection';
-import 'dart:ui';
 
+import 'package:chess_client/icons.dart' as icons;
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/board/utils.dart' as utils;
@@ -9,7 +9,6 @@ import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/game/controls.dart' as game;
-import 'package:chess_client/src/widget/game/promotion.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
 
@@ -32,7 +31,7 @@ class _GameState extends State<GameRoute> {
   bool _isFinished = false;
   bool checkmate;
   bool p1;
-  bool _reverse;
+  bool _reverse = false;
 
   int focusid;
   int promoteid;
@@ -40,6 +39,22 @@ class _GameState extends State<GameRoute> {
   Key rebuild = Key("");
 
   final markers = <game.BoardMarker>[];
+
+  bool get yourTurn => widget.testing
+      ? true
+      : (!_isFinished ? p1 == widget.service.playerTurn : false);
+
+  Board _board() {
+    if (widget.testing) {
+      return brd;
+    } else {
+      if (!_isFinished && widget.service.board != null) {
+        return widget.service.board;
+      } else {
+        return brd;
+      }
+    }
+  }
 
   Piece getPiece(Point src) {
     if (!widget.testing) {
@@ -80,6 +95,32 @@ class _GameState extends State<GameRoute> {
     final pro = d as order.Promote;
     setState(() {
       promoteid = pro.id;
+      showDialog(
+        context: widget._navigator.currentContext,
+        barrierDismissible: false,
+        builder: (BuildContext ctx) {
+          return AlertDialog(
+            title: Text("Promote your piece!"),
+            actions: <Widget>[
+              TextButton(
+                child: Text("leave"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (widget._navigator != null) {
+                    widget.goToHub();
+                  }
+                },
+              ),
+              TextButton(
+                child: Text("stay"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
     });
   }
 
@@ -180,18 +221,6 @@ class _GameState extends State<GameRoute> {
     super.initState();
   }
 
-  Board _board() {
-    if (widget.testing) {
-      return brd;
-    } else {
-      if (!_isFinished && widget.service.board != null) {
-        return widget.service.board;
-      } else {
-        return brd;
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (markers.length == 0) {
@@ -208,12 +237,104 @@ class _GameState extends State<GameRoute> {
         Colors.white, Colors.blueGrey, markers, getPiece,
         reverse: _reverse);
 
+    final brdwidget = GestureDetector(
+      onTapDown: (TapDownDetails details) {
+        if (_board().historyLast != _board().history.length) {
+          _board().resetHistory();
+          return;
+        }
+
+        if (_isFinished) return;
+
+        if (promoteid != null) return;
+
+        Point dst =
+            bg.clickAt(details.localPosition.dx, details.localPosition.dy);
+        final mm = widget.service.board.get(dst);
+
+        if (widget.service.playerTurn != p1) return;
+
+        if (mm != null) {
+          final pec = mm.piece;
+          // our piece?
+          if (pec.p1 == p1) {
+            // are we focused at a previous piece?
+            if (focusid != null) {
+              final cep = widget.service.board.getByIndex(focusid);
+
+              // are they king and rook? then do castling
+              final ok1 =
+                  pec.kind == PieceKind.king && cep.kind == PieceKind.rook;
+              final ok2 =
+                  pec.kind == PieceKind.rook && cep.kind == PieceKind.king;
+              if (ok1 || ok2) {
+                widget.service.castling(focusid, mm.id);
+
+                setState(() {
+                  markers[1].points.clear();
+                  markers[0].points.clear();
+
+                  focusid = null;
+                });
+                return;
+              }
+            }
+            // then select it
+            setState(() {
+              markers[1].points.clear();
+              markers[0].points.clear();
+              markers[0].addPoint(<Point>[
+                dst,
+              ]);
+
+              focusid = mm.id;
+            });
+
+            widget.service.possib(mm.id).then((HashMap<String, Point> ll) {
+              markers[1].points.addAll(ll);
+            }).then((_) {
+              setState(() {});
+            });
+          } else {
+            // not our piece? then move there
+            if (focusid != null) {
+              widget.service.move(focusid, dst);
+
+              setState(() {
+                markers[1].points.clear();
+                markers[0].points.clear();
+
+                focusid = null;
+              });
+            }
+          }
+        } else {
+          if (focusid != null) {
+            widget.service.move(focusid, dst).catchError((e) {
+              print("error $e");
+            }).then((_) {
+              focusid = null;
+            });
+
+            setState(() {
+              markers[1].points.clear();
+              markers[0].points.clear();
+            });
+          }
+        }
+      },
+      child: CustomPaint(
+        painter: bg,
+        child: Container(),
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        automaticallyImplyLeading: !_isFinished,
+        automaticallyImplyLeading: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(icons.arrow_back),
           tooltip: "Leave game",
           onPressed: () {
             showDialog(
@@ -257,156 +378,23 @@ class _GameState extends State<GameRoute> {
           },
         ),
       ),
-      body: Center(
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final height = constraints.maxHeight;
-            final width = constraints.maxWidth;
-
-            double size = width > height ? height : width;
-            size = size * 0.85;
-
-            final brdwidget = GestureDetector(
-              onTapDown: (TapDownDetails details) {
-                if (_board().historyLast != _board().history.length) {
-                  _board().resetHistory();
-                  return;
-                }
-
-                if (_isFinished) return;
-
-                if (promoteid != null) return;
-
-                Point dst = bg.clickAt(
-                    details.localPosition.dx, details.localPosition.dy);
-                final mm = widget.service.board.get(dst);
-
-                if (widget.service.playerTurn != p1) return;
-
-                if (mm != null) {
-                  final pec = mm.piece;
-                  // our piece?
-                  if (pec.p1 == p1) {
-                    // are we focused at a previous piece?
-                    if (focusid != null) {
-                      final cep = widget.service.board.getByIndex(focusid);
-
-                      // are they king and rook? then do castling
-                      final ok1 = pec.kind == PieceKind.king &&
-                          cep.kind == PieceKind.rook;
-                      final ok2 = pec.kind == PieceKind.rook &&
-                          cep.kind == PieceKind.king;
-                      if (ok1 || ok2) {
-                        widget.service.castling(focusid, mm.id);
-
-                        setState(() {
-                          markers[1].points.clear();
-                          markers[0].points.clear();
-
-                          focusid = null;
-                        });
-                        return;
-                      }
-                    }
-                    // then select it
-                    setState(() {
-                      markers[1].points.clear();
-                      markers[0].points.clear();
-                      markers[0].addPoint(<Point>[
-                        dst,
-                      ]);
-
-                      focusid = mm.id;
-                    });
-
-                    widget.service
-                        .possib(mm.id)
-                        .then((HashMap<String, Point> ll) {
-                      markers[1].points.addAll(ll);
-                    }).then((_) {
-                      setState(() {});
-                    });
-                  } else {
-                    // not our piece? then move there
-                    if (focusid != null) {
-                      widget.service.move(focusid, dst);
-
-                      setState(() {
-                        markers[1].points.clear();
-                        markers[0].points.clear();
-
-                        focusid = null;
-                      });
-                    }
-                  }
-                } else {
-                  if (focusid != null) {
-                    widget.service.move(focusid, dst).catchError((e) {
-                      print("error $e");
-                    }).then((_) {
-                      focusid = null;
-                    });
-
-                    setState(() {
-                      markers[1].points.clear();
-                      markers[0].points.clear();
-                    });
-                  }
-                }
-              },
-              child: CustomPaint(
-                size: Size(size, size),
-                painter: bg,
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1.0,
+                  child: brdwidget,
+                ),
               ),
-            );
-
-            Widget wdgt = Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                brdwidget,
-                game.Controls(
-                    _board(),
-                    reverse,
-                    widget.goToHub,
-                    widget.service.playerTurn == p1 && !_isFinished,
-                    _isFinished,
-                    disabled: promoteid != null ? true : false,
-                    key: rebuild),
-              ],
-            );
-            if (promoteid != null) {
-              wdgt = ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                child: wdgt,
-              );
-            }
-
-            return Stack(
-              children: <Widget>[
-                // if promotion
-                wdgt,
-                if (promoteid != null)
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: size,
-                        height: size,
-                        child: game.Promotion(p1, (int kind) {
-                          widget.service.promote(promoteid, kind).then((_) {
-                            setState(() {
-                              promoteid = null;
-                            });
-                          });
-                        }),
-                      ),
-                    ),
-                  )
-              ],
-            );
-          },
-        ),
+              game.Controls(widget.service.board, reverse, widget.goToHub,
+                  yourTurn, _isFinished),
+            ],
+          ),
+        ],
       ),
     );
   }
