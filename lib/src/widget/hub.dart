@@ -1,3 +1,4 @@
+import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:flutter/material.dart';
@@ -35,7 +36,7 @@ class _HubRouteState extends State<HubRoute> {
       switch (name) {
         case "Invite":
           {
-            widget.service.getAvaliableUsers().then((List<String> l) {
+            widget.service.getAvaliableUsers().then((List<model.Profile> l) {
               showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -46,12 +47,22 @@ class _HubRouteState extends State<HubRoute> {
                         child: ListView(
                           shrinkWrap: true,
                           children: <Widget>[
-                            for (var str in l)
-                              ListTile(
-                                title: Text("$str"),
-                                onTap: () {
-                                  widget.service.invite(str);
-                                },
+                            for (var profile in l)
+                              Card(
+                                child: Column(
+                                  children: <Widget>[
+                                    ListTile(
+                                      leading: CircleAvatar(
+                                        foregroundImage:
+                                            NetworkImage(profile.picture),
+                                      ),
+                                      title: Text(profile.username),
+                                      subtitle: Text(
+                                        profile.platform,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                           ],
                         ),

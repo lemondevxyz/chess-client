@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/board/utils.dart' as utils;
+import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/conf.dart';
 import 'package:chess_client/src/rest/interface.dart';
@@ -59,11 +60,16 @@ class Server implements ServerService {
     return Future.error("in game");
   }
 
-  Future<List<String>> getAvaliableUsers() async {
-    final c = Completer<List<String>>();
+  Future<List<model.Profile>> getAvaliableUsers() async {
+    final c = Completer<List<model.Profile>>();
     _getRequest(Server.routes["avali"]).then((str) {
-      final obj = jsonDecode(str);
-      final List<String> list = obj != null ? List.from(obj) : null;
+      final obj = jsonDecode(str) as List<dynamic>;
+      final list = <model.Profile>[];
+
+      obj.asMap().forEach((int i, dynamic d) {
+        list.add(model.Profile.fromJson(d as Map<String, dynamic>));
+      });
+
       c.complete(list);
     }).catchError((e) {
       c.completeError(e);
@@ -398,19 +404,17 @@ class Server implements ServerService {
     final c = Completer<String>();
     final String url = conf.http(route);
 
-    try {
-      http.get(url, headers: _headers).then((r) {
-        if (r.statusCode != 200) {
-          c.completeError("${r.body}");
-        } else {
-          c.complete(r.body);
-        }
-      }).catchError((e) {
-        c.completeError(e);
-      });
-    } catch (e) {
+    http.get(url, headers: _headers).then((r) {
+      if (r.statusCode != 200) {
+        c.completeError("${r.body}");
+      } else {
+        //print("get statuscode ${r.body}");
+        c.complete(r.body);
+      }
+    }).catchError((e) {
+      // print("get $e");
       c.completeError(e);
-    }
+    });
 
     return c.future;
   }
@@ -428,12 +432,12 @@ class Server implements ServerService {
         if (r.statusCode != 200) {
           c.completeError("${r.body}");
         } else {
-          print("post statuscode ${r.body}");
+          // print("post statuscode ${r.body}");
           c.complete(r.body);
         }
       });
     } catch (e) {
-      print("post ee $e");
+      // print("post ee $e");
       c.completeError(e);
     }
 

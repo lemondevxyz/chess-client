@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/model/order.dart' as order;
+import 'package:chess_client/src/model/model.dart' as model;
 
 abstract class ServerService
     implements
@@ -49,7 +50,7 @@ abstract class HistoryService {
 }
 
 abstract class InviteService {
-  Future<List<String>> getAvaliableUsers();
+  Future<List<model.Profile>> getAvaliableUsers();
   Future<void> acceptInvite(String id);
   Future<void> invite(String id);
   List<order.Invite> get invites;
