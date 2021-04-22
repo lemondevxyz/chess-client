@@ -382,9 +382,11 @@ class _GameState extends State<GameRoute> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
+              Expanded(child: Container()),
               Expanded(
+                flex: 20,
                 child: AspectRatio(
                   aspectRatio: 1.0,
                   child: brdwidget,
@@ -392,6 +394,7 @@ class _GameState extends State<GameRoute> {
               ),
               game.Controls(widget.service.board, reverse, widget.goToHub,
                   yourTurn, _isFinished),
+              //Expanded(child: Container()),
             ],
           ),
         ],

@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:chess_client/src/board/piece.dart';
 import 'package:flutter/material.dart';
 
-String numToString(int i) {
+String numToLetter(int i) {
   switch (i) {
     case 1:
       return "A";
@@ -48,10 +48,13 @@ class BoardMarker {
 
 class BoardGraphics extends CustomPainter {
   static int max = 8;
-  static int imgSize = 200;
+  // how to much resize piece icons
+  static double txtrm = 25;
   // these are for piece shadows
   static double shadowoffset = 2.0;
   static double shadowblur = 2.0;
+  // indicatorSize is the font percentage for the indicator(letters and numbers alongside the square)
+  static double indicatorPercentage = 0.20;
 
   final List<BoardMarker> markerPoints;
 
@@ -77,6 +80,39 @@ class BoardGraphics extends CustomPainter {
     return clr;
   }
 
+  void drawIndicator(Canvas canvas, double minx, double miny, int number,
+      {bool letter}) {
+    // indicatorSize is the square size multiplied by indicatorPercentage
+    // indicator is the letter/number drawn alongside squares
+    final indicatorSize = div * indicatorPercentage;
+
+    final int x = minx ~/ div;
+    final int y = miny ~/ div;
+
+    number = reverse ? 7 - number.abs() : number;
+    final str = letter == true
+        ? numToLetter(number + 1).toLowerCase()
+        : number.toString();
+
+    final builder = ui.ParagraphBuilder(
+      ui.ParagraphStyle(
+        textAlign: TextAlign.center,
+      ),
+    );
+
+    builder.pushStyle(ui.TextStyle(
+      color: getBackground(Point(x + 1, y)),
+      fontSize: indicatorSize,
+      fontWeight: FontWeight.bold,
+    ));
+    builder.addText(str);
+
+    final para = builder.build();
+    para.layout(ui.ParagraphConstraints(width: 0));
+
+    canvas.drawParagraph(para, Offset(minx, miny - 5));
+  }
+
   Point clickAt(double dx, double dy) {
     final src = Point(dx ~/ div, dy ~/ div);
 
@@ -88,12 +124,10 @@ class BoardGraphics extends CustomPainter {
     // well to make the canvas have 1:1 aspect ratio, pick the smaller (width or height), and set it as the size for each piece, square, or circle.
     final res = size.shortestSide;
     div = res / max;
-
     for (int x = 0; x < max; x++) {
       for (int y = 0; y < max; y++) {
         final drawers = <Function(Canvas)>[];
         final pnt = !reverse ? Point(x, y) : Point(x, y).reverse();
-
         // minimum x and y
         double minx = x * div;
         double miny = y * div;
@@ -104,7 +138,6 @@ class BoardGraphics extends CustomPainter {
         // draw all squares
         final paint = Paint();
         paint.color = getBackground(Point(x, y));
-
         canvas.drawRect(rect, paint);
         // draw all markers
         markerPoints.forEach((BoardMarker mark) {
@@ -133,12 +166,11 @@ class BoardGraphics extends CustomPainter {
         });
 
         final pec = getPiece(pnt);
+        // draw the piece
         if (pec != null) {
           final icon = PieceKind.getIcon(pec.kind);
           final clr = !pec.p1 ? Colors.black : Colors.white;
           final shadowclr = !pec.p1 ? Colors.white : Colors.black;
-          final txtrm = 25;
-
           if (icon != null) {
             final builder = ui.ParagraphBuilder(
               ui.ParagraphStyle(
@@ -187,10 +219,21 @@ class BoardGraphics extends CustomPainter {
             canvas.restore();
           }
         }
-
+        // draw markers that have drawOverPiece as true
         drawers.forEach((callback) {
           callback(canvas);
         });
+        if (x == 0) {
+          drawIndicator(canvas, minx + (20 * indicatorPercentage),
+              miny + (20 * indicatorPercentage), y + 1,
+              letter: false);
+        }
+        if (y == 7) {
+          final indicatorSize = (div * indicatorPercentage);
+          minx = (minx + div) - (indicatorSize - (30 * indicatorPercentage));
+          miny = (miny + div) - indicatorSize;
+          drawIndicator(canvas, minx, miny, x, letter: true);
+        }
       }
     }
   }
