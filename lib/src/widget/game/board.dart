@@ -51,8 +51,8 @@ class BoardGraphics extends CustomPainter {
   // how to much resize piece icons
   static double txtrm = 25;
   // these are for piece shadows
-  static double shadowoffset = 2.0;
-  static double shadowblur = 2.0;
+  static double cShadowOffset = 2.0;
+  static double cShadowBlur = 0.0;
   // indicatorSize is the font percentage for the indicator(letters and numbers alongside the square)
   static double indicatorPercentage = 0.20;
 
@@ -89,10 +89,9 @@ class BoardGraphics extends CustomPainter {
     final int x = minx ~/ div;
     final int y = miny ~/ div;
 
-    number = reverse ? 7 - number.abs() : number;
-    final str = letter == true
-        ? numToLetter(number + 1).toLowerCase()
-        : number.toString();
+    number = reverse ? 8 - number.abs() : number + 1;
+    final str =
+        letter == true ? numToLetter(number).toLowerCase() : number.toString();
 
     final builder = ui.ParagraphBuilder(
       ui.ParagraphStyle(
@@ -124,6 +123,7 @@ class BoardGraphics extends CustomPainter {
     // well to make the canvas have 1:1 aspect ratio, pick the smaller (width or height), and set it as the size for each piece, square, or circle.
     final res = size.shortestSide;
     div = res / max;
+
     for (int x = 0; x < max; x++) {
       for (int y = 0; y < max; y++) {
         final drawers = <Function(Canvas)>[];
@@ -185,23 +185,23 @@ class BoardGraphics extends CustomPainter {
               shadows: <Shadow>[
                 Shadow(
                   color: shadowclr,
-                  offset: Offset(0, shadowoffset),
-                  blurRadius: shadowblur,
+                  offset: Offset(0, cShadowOffset),
+                  blurRadius: cShadowBlur,
                 ),
                 Shadow(
                   color: shadowclr,
-                  offset: Offset(0, shadowoffset * -1),
-                  blurRadius: shadowblur,
+                  offset: Offset(0, cShadowOffset * -1),
+                  blurRadius: cShadowBlur,
                 ),
                 Shadow(
                   color: shadowclr,
-                  offset: Offset(shadowoffset, 0),
-                  blurRadius: shadowblur,
+                  offset: Offset(cShadowOffset, 0),
+                  blurRadius: cShadowBlur,
                 ),
                 Shadow(
                   color: shadowclr,
-                  offset: Offset(shadowoffset * -1, 0),
-                  blurRadius: shadowblur,
+                  offset: Offset(cShadowOffset * -1, 0),
+                  blurRadius: cShadowBlur,
                 ),
               ],
             ));
@@ -223,15 +223,15 @@ class BoardGraphics extends CustomPainter {
         drawers.forEach((callback) {
           callback(canvas);
         });
+        final indicatorSize = (div * indicatorPercentage);
         if (x == 0) {
-          drawIndicator(canvas, minx + (20 * indicatorPercentage),
-              miny + (20 * indicatorPercentage), y + 1,
+          drawIndicator(canvas, minx + (0.5 * indicatorSize),
+              miny + (0.5 * indicatorSize), y,
               letter: false);
         }
         if (y == 7) {
-          final indicatorSize = (div * indicatorPercentage);
-          minx = (minx + div) - (indicatorSize - (30 * indicatorPercentage));
-          miny = (miny + div) - indicatorSize;
+          minx = (minx + div) - (indicatorSize * 0.5);
+          miny = (miny + div) - (indicatorSize);
           drawIndicator(canvas, minx, miny, x, letter: true);
         }
       }

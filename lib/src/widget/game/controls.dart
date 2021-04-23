@@ -55,6 +55,7 @@ class Controls extends StatelessWidget {
     );
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         IconButton(
           tooltip: "View previous move",

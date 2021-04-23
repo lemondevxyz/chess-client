@@ -5,10 +5,12 @@ import 'package:chess_client/icons.dart' as icons;
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/board/utils.dart' as utils;
+import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/game/controls.dart' as game;
+import 'package:chess_client/src/widget/game/profile.dart' as game;
 // flutter
 import 'package:flutter/material.dart';
 
@@ -26,11 +28,12 @@ class GameRoute extends StatefulWidget {
 }
 
 class _GameState extends State<GameRoute> {
-  Board brd = Board();
+  Board _brd = Board();
+  Board get brd => widget.testing || _isFinished ? _brd : widget.service.board;
 
   bool _isFinished = false;
   bool checkmate;
-  bool p1;
+  bool p1 = false;
   bool _reverse = false;
 
   int focusid;
@@ -44,22 +47,10 @@ class _GameState extends State<GameRoute> {
       ? true
       : (!_isFinished ? p1 == widget.service.playerTurn : false);
 
-  Board _board() {
-    if (widget.testing) {
-      return brd;
-    } else {
-      if (!_isFinished && widget.service.board != null) {
-        return widget.service.board;
-      } else {
-        return brd;
-      }
-    }
-  }
-
   Piece getPiece(Point src) {
     if (!widget.testing) {
-      if (_board() == null) return null;
-      final mp = _board().get(src);
+      if (brd == null) return null;
+      final mp = brd.get(src);
       if (mp == null) return null;
 
       return mp.piece;
@@ -73,6 +64,11 @@ class _GameState extends State<GameRoute> {
 
     setState(() {});
   }
+
+  model.Profile get profile => !widget.testing
+      ? widget.service.profile
+      : model.Profile(
+          "#0001", "https://picsum.photos/200", "player 1", "debug");
 
   onCheckmate(dynamic parameter) {
     if (!(parameter is order.Turn)) {
@@ -135,7 +131,7 @@ class _GameState extends State<GameRoute> {
 
   onDone(dynamic parameter) {
     widget.service.board.removeListener(onTurn);
-    brd = widget.service.board.copy();
+    _brd = widget.service.board.copy();
     _isFinished = true;
 
     brd.addListener(onTurn);
@@ -194,7 +190,6 @@ class _GameState extends State<GameRoute> {
     widget.service.unsubscribe(order.OrderID.Promote);
     widget.service.unsubscribe(order.OrderID.Checkmate);
 
-    final brd = _board();
     if (brd != null) brd.removeListener(onTurn);
 
     super.dispose();
@@ -215,8 +210,8 @@ class _GameState extends State<GameRoute> {
       _reverse = !widget.service.p1;
     }
 
-    _board().removeListener(onTurn);
-    _board().addListener(onTurn);
+    brd.removeListener(onTurn);
+    brd.addListener(onTurn);
 
     super.initState();
   }
@@ -239,8 +234,8 @@ class _GameState extends State<GameRoute> {
 
     final brdwidget = GestureDetector(
       onTapDown: (TapDownDetails details) {
-        if (_board().historyLast != _board().history.length) {
-          _board().resetHistory();
+        if (brd.historyLast != brd.history.length) {
+          brd.resetHistory();
           return;
         }
 
@@ -260,7 +255,7 @@ class _GameState extends State<GameRoute> {
           if (pec.p1 == p1) {
             // are we focused at a previous piece?
             if (focusid != null) {
-              final cep = widget.service.board.getByIndex(focusid);
+              final cep = brd.getByIndex(focusid);
 
               // are they king and rook? then do castling
               final ok1 =
@@ -378,26 +373,38 @@ class _GameState extends State<GameRoute> {
           },
         ),
       ),
-      body: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Expanded(child: Container()),
-              Expanded(
-                flex: 20,
-                child: AspectRatio(
-                  aspectRatio: 1.0,
-                  child: brdwidget,
-                ),
+      body: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            IntrinsicWidth(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  game.Profile(
+                      NetworkImage(profile.picture),
+                      profile.username,
+                      <int, int>{
+                        1: 4,
+                        5: 2,
+                      },
+                      clr: p1 == true ? Colors.grey[600] : Colors.grey[400]),
+                  //),
+                  Expanded(
+                    flex: 19,
+                    child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: brdwidget,
+                    ),
+                  ),
+                  game.Controls(
+                      brd, reverse, widget.goToHub, yourTurn, _isFinished),
+                  //Expanded(child: Container()),
+                ],
               ),
-              game.Controls(widget.service.board, reverse, widget.goToHub,
-                  yourTurn, _isFinished),
-              //Expanded(child: Container()),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
