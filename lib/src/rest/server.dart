@@ -114,7 +114,7 @@ class Server implements ServerService {
 
   Future<HashMap<String, Point>> possib(int id) async {
     final c = Completer<HashMap<String, Point>>();
-    _postRequest(Server.routes["possib"], jsonEncode(order.Possible(id, null)))
+    _postRequest(Server.routes["possib"], jsonEncode(model.Possible(id, null)))
         .then((body) {
       final json = jsonDecode(body);
       final map = <String, Point>{};
@@ -208,7 +208,10 @@ class Server implements ServerService {
 
   // WebsocketService
   order.Credentials _credentials;
+
   model.Profile get profile => _credentials.profile;
+  model.Profile get vsprofile => _game.profile;
+
   WebSocket _socket;
 
   bool isConnected() {

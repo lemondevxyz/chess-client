@@ -1,411 +1,95 @@
-// Our widgets
-import 'dart:collection';
-
-import 'package:chess_client/icons.dart' as icons;
-import 'package:chess_client/src/board/board.dart';
-import 'package:chess_client/src/board/piece.dart';
-import 'package:chess_client/src/board/utils.dart' as utils;
+import 'package:chess_client/src/board/board.dart' as board;
 import 'package:chess_client/src/model/model.dart' as model;
-import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
 import 'package:chess_client/src/widget/game/board.dart' as game;
+import 'package:chess_client/src/widget/game/clickable.dart' as game;
 import 'package:chess_client/src/widget/game/controls.dart' as game;
 import 'package:chess_client/src/widget/game/profile.dart' as game;
-// flutter
 import 'package:flutter/material.dart';
 
 class GameRoute extends StatefulWidget {
-  final title = "Game";
-  final bool testing;
   final rest.GameService service;
-  final Function() goToHub;
+  final void Function() goToHub;
+  final bool testing;
   final GlobalKey<NavigatorState> _navigator;
 
-  const GameRoute(this.testing, this.service, this.goToHub, this._navigator);
+  final _brd = board.Board();
+
+  GameRoute(this.service, this.goToHub, this._navigator,
+      {this.testing = false});
 
   @override
-  _GameState createState() => _GameState();
+  createState() => _GameState();
 }
 
 class _GameState extends State<GameRoute> {
-  Board _brd = Board();
-  Board get brd => widget.testing || _isFinished ? _brd : widget.service.board;
+  bool get isOurTurn => false;
+  bool isReverse = false;
+  bool isFinished = false;
 
-  bool _isFinished = false;
-  bool checkmate;
-  bool p1 = false;
-  bool _reverse = false;
-
-  int focusid;
-  int promoteid;
-
-  Key rebuild = Key("");
-
-  final markers = <game.BoardMarker>[];
-
-  bool get yourTurn => widget.testing
-      ? true
-      : (!_isFinished ? p1 == widget.service.playerTurn : false);
-
-  Piece getPiece(Point src) {
-    if (!widget.testing) {
-      if (brd == null) return null;
-      final mp = brd.get(src);
-      if (mp == null) return null;
-
-      return mp.piece;
-    } else {
-      return Piece(Point(0, 0), PieceKind.pawn, (src.x % 2) == 1);
-    }
-  }
-
-  void reverse() {
-    _reverse = !_reverse;
-
-    setState(() {});
-  }
-
-  model.Profile get profile => !widget.testing
-      ? widget.service.profile
-      : model.Profile(
-          "#0001", "https://picsum.photos/200", "player 1", "debug");
-
-  onCheckmate(dynamic parameter) {
-    if (!(parameter is order.Turn)) {
-      print("checkmate has bad struct");
-      return;
-    }
-
-    final c = parameter as order.Turn;
-    setState(() {
-      final king = brd.getByIndex(utils.getKing(p1));
-      markers[0].addPoint(<Point>[king.pos]);
-
-      checkmate = c.p1;
-    });
-  }
-
-  onPromote(dynamic d) {
-    if (!(d is order.Promote)) throw "dynamic is not of type model.Promote";
-
-    final pro = d as order.Promote;
-    setState(() {
-      promoteid = pro.id;
-      showDialog(
-        context: widget._navigator.currentContext,
-        barrierDismissible: false,
-        builder: (BuildContext ctx) {
-          return AlertDialog(
-            title: Text("Promote your piece!"),
-            actions: <Widget>[
-              TextButton(
-                child: Text("leave"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (widget._navigator != null) {
-                    widget.goToHub();
-                  }
-                },
-              ),
-              TextButton(
-                child: Text("stay"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    });
-  }
-
-  onTurn() {
-    setState(() {
-      if (markers.length > 2) {
-        markers[0].points.clear();
-        markers[1].points.clear();
-      }
-    });
-  }
-
-  onDone(dynamic parameter) {
-    widget.service.board.removeListener(onTurn);
-    _brd = widget.service.board.copy();
-    _isFinished = true;
-
-    brd.addListener(onTurn);
-    rebuild = UniqueKey();
-
-    setState(() {});
-
-    if (!(parameter is order.Done)) throw "bad parameter for done";
-    final d = parameter as order.Done;
-
-    String text;
-    if (d.p1 == widget.service.p1) {
-      text = "You won";
-    } else {
-      text = "You lost";
-    }
-
-    showDialog(
-        context: widget._navigator.currentContext,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(text),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  Text(
-                      "The game ended. Would you like to stay or go back to the hub?"),
-                ],
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text("leave"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (widget._navigator != null) {
-                    widget.goToHub();
-                  }
-                },
-              ),
-              TextButton(
-                child: Text("stay"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        });
-  }
-
-  @override
-  dispose() {
-    widget.service.unsubscribe(order.OrderID.Done);
-    widget.service.unsubscribe(order.OrderID.Turn);
-    widget.service.unsubscribe(order.OrderID.Promote);
-    widget.service.unsubscribe(order.OrderID.Checkmate);
-
-    if (brd != null) brd.removeListener(onTurn);
-
-    super.dispose();
-  }
+  game.Markers markers;
 
   @override
   initState() {
-    if (!widget.testing) {
-      widget.service.subscribe(order.OrderID.Done, onDone);
-      widget.service.subscribe(order.OrderID.Checkmate, onCheckmate);
-      widget.service.subscribe(order.OrderID.Turn, (_) {
-        onTurn();
-        checkmate = false;
-      });
-      widget.service.subscribe(order.OrderID.Promote, onPromote);
-
-      p1 = widget.service.p1;
-      _reverse = !widget.service.p1;
-    }
-
-    brd.removeListener(onTurn);
-    brd.addListener(onTurn);
-
     super.initState();
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (markers.length == 0) {
-      final pri = Theme.of(context).primaryColor;
+  dispose() {
+    super.dispose();
+  }
 
-      markers.add(game.BoardMarker(pri));
-      markers.add(
-        game.BoardMarker(pri.withOpacity(0.54),
-            drawOverPiece: true, isCircle: true, circlePercentage: 0.5),
+  void toggleReverse() {
+    isReverse = !isReverse;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p1 = widget.service.p1;
+
+    if (markers == null) {
+      markers = game.Markers(
+        Theme.of(context).errorColor,
+        Theme.of(context).primaryColor.withOpacity(0.54),
+        Theme.of(context).primaryColor,
       );
     }
 
-    final bg = game.BoardGraphics(
-        Colors.white, Colors.blueGrey, markers, getPiece,
-        reverse: _reverse);
+    final brd = widget.testing ? widget.service.board : widget._brd;
+    final wdgt = game.Board(brd, markers);
 
-    final brdwidget = GestureDetector(
-      onTapDown: (TapDownDetails details) {
-        if (brd.historyLast != brd.history.length) {
-          brd.resetHistory();
-          return;
-        }
+    model.Profile top = !p1 ? widget.service.profile : widget.service.vsprofile;
+    bool topp1 = false;
 
-        if (_isFinished) return;
+    model.Profile bot = p1 ? widget.service.vsprofile : widget.service.profile;
+    bool botp1 = true;
 
-        if (promoteid != null) return;
+    if (isReverse) {
+      model.Profile placeholder = top;
 
-        Point dst =
-            bg.clickAt(details.localPosition.dx, details.localPosition.dy);
-        final mm = widget.service.board.get(dst);
+      top = bot;
+      bot = placeholder;
 
-        if (widget.service.playerTurn != p1) return;
+      bool p1 = topp1;
+      topp1 = botp1;
+      botp1 = p1;
+    }
 
-        if (mm != null) {
-          final pec = mm.piece;
-          // our piece?
-          if (pec.p1 == p1) {
-            // are we focused at a previous piece?
-            if (focusid != null) {
-              final cep = brd.getByIndex(focusid);
+    final black = Colors.grey[700];
+    final white = Colors.grey[300];
 
-              // are they king and rook? then do castling
-              final ok1 =
-                  pec.kind == PieceKind.king && cep.kind == PieceKind.rook;
-              final ok2 =
-                  pec.kind == PieceKind.rook && cep.kind == PieceKind.king;
-              if (ok1 || ok2) {
-                widget.service.castling(focusid, mm.id);
-
-                setState(() {
-                  markers[1].points.clear();
-                  markers[0].points.clear();
-
-                  focusid = null;
-                });
-                return;
-              }
-            }
-            // then select it
-            setState(() {
-              markers[1].points.clear();
-              markers[0].points.clear();
-              markers[0].addPoint(<Point>[
-                dst,
-              ]);
-
-              focusid = mm.id;
-            });
-
-            widget.service.possib(mm.id).then((HashMap<String, Point> ll) {
-              markers[1].points.addAll(ll);
-            }).then((_) {
-              setState(() {});
-            });
-          } else {
-            // not our piece? then move there
-            if (focusid != null) {
-              widget.service.move(focusid, dst);
-
-              setState(() {
-                markers[1].points.clear();
-                markers[0].points.clear();
-
-                focusid = null;
-              });
-            }
-          }
-        } else {
-          if (focusid != null) {
-            widget.service.move(focusid, dst).catchError((e) {
-              print("error $e");
-            }).then((_) {
-              focusid = null;
-            });
-
-            setState(() {
-              markers[1].points.clear();
-              markers[0].points.clear();
-            });
-          }
-        }
-      },
-      child: CustomPaint(
-        painter: bg,
-        child: Container(),
-      ),
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        automaticallyImplyLeading: true,
-        leading: IconButton(
-          icon: Icon(icons.arrow_back),
-          tooltip: "Leave game",
-          onPressed: () {
-            showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  final String txt = _isFinished
-                      ? "Are you sure you want to leave? You'll lose the ability analyse this game!"
-                      : "Are your sure you want to leave this game? You'll lose the game!";
-
-                  return AlertDialog(
-                    title: Text("Are you sure?"),
-                    content: SingleChildScrollView(
-                      child: ListBody(
-                        children: <Widget>[
-                          Text(txt),
-                        ],
-                      ),
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        child: Text("leave"),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          if (!_isFinished) {
-                            widget.service.unsubscribe(order.OrderID.Done);
-                            widget.service.leaveGame();
-                          }
-
-                          widget.goToHub();
-                        },
-                      ),
-                      TextButton(
-                        child: Text("stay"),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ],
-                  );
-                });
-          },
-        ),
-      ),
-      body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            IntrinsicWidth(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  game.Profile(
-                      NetworkImage(profile.picture),
-                      profile.username,
-                      <int, int>{
-                        1: 4,
-                        5: 2,
-                      },
-                      clr: p1 == true ? Colors.grey[600] : Colors.grey[400]),
-                  //),
-                  Expanded(
-                    flex: 19,
-                    child: AspectRatio(
-                      aspectRatio: 1.0,
-                      child: brdwidget,
-                    ),
-                  ),
-                  game.Controls(
-                      brd, reverse, widget.goToHub, yourTurn, _isFinished),
-                  //Expanded(child: Container()),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return Column(
+      children: <Widget>[
+        game.Profile(top, brd.deadPieces(topp1), clr: topp1 ? white : black),
+        if (isFinished && !widget.testing)
+          wdgt
+        else
+          game.Clickable(wdgt, widget.service),
+        game.Profile(top, brd.deadPieces(botp1), clr: botp1 ? black : white),
+        game.Controls(
+            brd, toggleReverse, widget.goToHub, isOurTurn, isFinished),
+        //game
+      ],
     );
   }
 }

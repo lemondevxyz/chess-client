@@ -233,4 +233,14 @@ class Board with ChangeNotifier implements rest.HistoryService {
 
     notifyListeners();
   }
+
+  Map<int, int> deadPieces(bool p1) {
+    final m = <int, int>{};
+
+    getRange(p1).forEach((int i) {
+      if (_data[i].pos.equal(Point(-1, -1))) m[_data[i].kind]++;
+    });
+
+    return m;
+  }
 }

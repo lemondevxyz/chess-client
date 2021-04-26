@@ -28,6 +28,8 @@ abstract class BoardService {
   bool get p1;
   bool get playerTurn;
 
+  model.Profile get vsprofile;
+
   Future<HashMap<String, Point>> possib(int id);
   Future<void> move(int id, Point dst);
   Future<void> castling(int kingid, int rookid);

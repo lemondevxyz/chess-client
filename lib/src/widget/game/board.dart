@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:ui' as ui;
 
+import 'package:chess_client/src/board/board.dart' as board;
 import 'package:chess_client/src/board/piece.dart';
 import 'package:flutter/material.dart';
 
@@ -27,17 +28,14 @@ String numToLetter(int i) {
   return "";
 }
 
-class BoardMarker {
+class Marker {
   final points = HashMap<String, void>();
   final Color color;
-  final bool isCircle;
-  // if isCircle is true and this variable is null, then default value(1.0) will be used.
   final double circlePercentage;
   // should our marker draw over the pieces???
   final bool drawOverPiece;
 
-  BoardMarker(this.color,
-      {this.isCircle, this.circlePercentage, this.drawOverPiece});
+  Marker(this.color, {this.circlePercentage, this.drawOverPiece});
 
   addPoint(List<Point> ps) {
     ps.forEach((pec) {
@@ -46,7 +44,43 @@ class BoardMarker {
   }
 }
 
-class BoardGraphics extends CustomPainter {
+class Markers extends ChangeNotifier {
+  static int focus = 2;
+  static int possib = 1;
+  static int checkmate = 0;
+
+  final _data = <Marker>[];
+
+  add(Marker value) {
+    _data.add(value);
+    notifyListeners();
+  }
+
+  remove(Marker value) {
+    _data.remove(value);
+    notifyListeners();
+  }
+
+  forEach(Function(Marker) fn) {
+    _data.forEach(fn);
+    notifyListeners();
+  }
+
+  Markers(Color focus, Color possib, Color checkmate) {
+    _data.add(Marker(checkmate));
+    _data.add(Marker(focus));
+    _data.add(Marker(possib, drawOverPiece: true, circlePercentage: 0.5));
+  }
+
+  setCheckmate(Point src) => _data[checkmate].addPoint(<Point>[src]);
+  setFocus(Point src) => _data[focus].addPoint(<Point>[src]);
+  addPossib(List<Point> ps) => _data[possib].addPoint(ps);
+
+  operator [](int i) => _data[i];
+  operator []=(int i, Marker value) => _data[i] = value;
+}
+
+class _BoardGraphics extends CustomPainter {
   static int max = 8;
   // how to much resize piece icons
   static double txtrm = 25;
@@ -56,7 +90,7 @@ class BoardGraphics extends CustomPainter {
   // indicatorSize is the font percentage for the indicator(letters and numbers alongside the square)
   static double indicatorPercentage = 0.20;
 
-  final List<BoardMarker> markerPoints;
+  final Markers markerPoints;
 
   Color pri;
   Color sec;
@@ -66,7 +100,7 @@ class BoardGraphics extends CustomPainter {
 
   double div = 0.0;
 
-  BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece,
+  _BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece,
       {this.reverse = false});
 
   Color getBackground(Point pnt) {
@@ -103,6 +137,7 @@ class BoardGraphics extends CustomPainter {
       color: getBackground(Point(x + 1, y)),
       fontSize: indicatorSize,
       fontWeight: FontWeight.bold,
+      fontFamily: "monospace",
     ));
     builder.addText(str);
 
@@ -140,13 +175,13 @@ class BoardGraphics extends CustomPainter {
         paint.color = getBackground(Point(x, y));
         canvas.drawRect(rect, paint);
         // draw all markers
-        markerPoints.forEach((BoardMarker mark) {
+        markerPoints.forEach((Marker mark) {
           final callback = (Canvas canvas) {
             if (mark.points.containsKey(pnt.toString())) {
               final paint = Paint()..color = mark.color;
-              if (mark.isCircle == true) {
-                final scale =
-                    mark.circlePercentage == null ? 1.0 : mark.circlePercentage;
+              if (mark.circlePercentage != null) {
+                final scale = mark.circlePercentage;
+
                 final radius = scale * (div / 2);
 
                 final double diff = 1.0 / scale;
@@ -230,7 +265,7 @@ class BoardGraphics extends CustomPainter {
               letter: false);
         }
         if (y == 7) {
-          minx = (minx + div) - (indicatorSize * 0.5);
+          minx = (minx + div) - (indicatorSize);
           miny = (miny + div) - (indicatorSize);
           drawIndicator(canvas, minx, miny, x, letter: true);
         }
@@ -239,10 +274,50 @@ class BoardGraphics extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(BoardGraphics old) =>
+  bool shouldRepaint(_BoardGraphics old) =>
       old.pri != pri ||
       old.sec != sec ||
       old.markerPoints != markerPoints ||
-      old.div != div ||
       old.reverse != reverse;
+}
+
+class Board extends StatefulWidget {
+  final board.Board brd;
+  final Markers markers;
+  final _BoardGraphics graphics;
+
+  Board(this.brd, this.markers)
+      : graphics = _BoardGraphics(Colors.white, Colors.blueGrey, markers,
+            (Point src) => brd.get(src).piece);
+
+  @override
+  createState() => _BoardState();
+}
+
+class _BoardState extends State<Board> {
+  @override
+  initState() {
+    widget.brd.addListener(redraw);
+    widget.markers.addListener(redraw);
+    super.initState();
+  }
+
+  @override
+  dispose() {
+    widget.brd.removeListener(redraw);
+    widget.markers.addListener(redraw);
+    super.dispose();
+  }
+
+  void redraw() {
+    setState(() {});
+  }
+
+  @override
+  build(BuildContext context) {
+    return CustomPaint(
+      painter: widget.graphics,
+      child: Container(),
+    );
+  }
 }

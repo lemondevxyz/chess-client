@@ -6,13 +6,13 @@ class Controls extends StatelessWidget {
   static double size = 36.0;
 
   final rest.HistoryService service;
-  final Function() reverse;
+  final Function() toggleReverse;
   final Function() goToHub;
-  final bool yourTurn;
+  final bool isOurTurn;
   final bool isFinished;
 
-  const Controls(
-      this.service, this.reverse, this.goToHub, this.yourTurn, this.isFinished,
+  const Controls(this.service, this.toggleReverse, this.goToHub, this.isOurTurn,
+      this.isFinished,
       {Key key})
       : super(key: key);
 
@@ -25,12 +25,12 @@ class Controls extends StatelessWidget {
     IconData turnIcon;
     Color turnColor;
     String turnTooltip;
-    if (yourTurn) {
+    if (isOurTurn) {
       turnIcon = icons.check_circle;
       turnColor = Colors.green;
       turnTooltip = "Your turn";
     }
-    if (!yourTurn) {
+    if (!isOurTurn) {
       turnIcon = icons.cancel;
       turnColor = Colors.red;
       turnTooltip = "Not your turn";
@@ -47,7 +47,7 @@ class Controls extends StatelessWidget {
       height: size,
     );
 
-    final ok = isFinished || yourTurn;
+    final ok = isFinished || isOurTurn;
     final wdgtturn = Icon(
       turnIcon,
       color: turnColor,
@@ -92,7 +92,7 @@ class Controls extends StatelessWidget {
             //hoverColor: disabled ? Colors.transparent : clr,
             ),
         spacing,
-        if (reverse != null)
+        if (toggleReverse != null)
           IconButton(
             tooltip: "Reverse the board",
             iconSize: size,
@@ -101,7 +101,7 @@ class Controls extends StatelessWidget {
             ),
             color: Theme.of(context).primaryColor,
             onPressed: () {
-              if (reverse != null) reverse();
+              if (toggleReverse != null) toggleReverse();
             },
             //hoverColor: disabled ? Colors.transparent : clr,
           ),

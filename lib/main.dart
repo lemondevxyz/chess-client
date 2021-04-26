@@ -40,7 +40,11 @@ class _AppState extends State<App> {
       _navigator.currentState.pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (BuildContext ctx) => widget.GameRoute(
-                  debug == Debugging.game, server, goToHub, _navigator)),
+                    server,
+                    goToHub,
+                    _navigator,
+                    testing: debug == Debugging.game,
+                  )),
           (_) => false);
   }
 
@@ -105,7 +109,8 @@ class _AppState extends State<App> {
         return MaterialPageRoute(builder: (BuildContext ctx) {
           switch (debug) {
             case Debugging.game:
-              return widget.GameRoute(true, null, goToHub, _navigator);
+              return widget.GameRoute(null, goToHub, _navigator,
+                  testing: false);
           }
 
           return OfflineRoute();
