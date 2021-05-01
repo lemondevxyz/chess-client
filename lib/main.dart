@@ -7,13 +7,14 @@ import 'package:chess_client/src/rest/conf.dart' as rest;
 
 class Debugging {
   static const none = 0;
-  static const game = 1;
-  static const boardwidget = 2;
+  static const hub = 1;
+  static const game = 2;
+  static const boardwidget = 3;
 }
 
 rest.Server server = rest.Server(
     rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
-const debug = Debugging.game;
+const debug = Debugging.none;
 
 void main() {
   runApp(App());
@@ -108,9 +109,10 @@ class _AppState extends State<App> {
       onGenerateRoute: (RouteSettings settings) {
         return MaterialPageRoute(builder: (BuildContext ctx) {
           switch (debug) {
+            case Debugging.hub:
+              return widget.HubRoute(null, testing: true);
             case Debugging.game:
-              return widget.GameRoute(null, goToHub, _navigator,
-                  testing: false);
+              return widget.GameRoute(null, goToHub, _navigator, testing: true);
           }
 
           return OfflineRoute();

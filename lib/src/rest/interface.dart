@@ -11,6 +11,7 @@ abstract class ServerService
         InviteService,
         WebsocketService,
         SubscribeService,
+        WatchableService,
         GameService,
         HubService {}
 
@@ -19,7 +20,11 @@ abstract class GameService
 
 // widget/hub.dart
 abstract class HubService
-    implements InviteService, SubscribeService, WebsocketService {}
+    implements
+        InviteService,
+        WatchableService,
+        SubscribeService,
+        WebsocketService {}
 
 // this only implemented in the server
 // TODO: implement this in normal board
@@ -49,6 +54,11 @@ abstract class HistoryService {
 
   bool canResetHistory();
   void resetHistory();
+}
+
+abstract class WatchableService {
+  Future<void> refreshWatchable();
+  HashMap<String, model.Watchable> get watchables;
 }
 
 abstract class InviteService {

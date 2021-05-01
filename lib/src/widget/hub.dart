@@ -1,6 +1,7 @@
 import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
+import 'package:chess_client/src/widget/hub/watchable.dart' as hub;
 import 'package:chess_client/icons.dart' as icons;
 import 'package:flutter/material.dart';
 
@@ -9,8 +10,9 @@ const notificationDuration = Duration(seconds: 3);
 class HubRoute extends StatefulWidget {
   final String title = "Hub";
   final rest.HubService service;
+  final bool testing;
 
-  const HubRoute(this.service);
+  const HubRoute(this.service, {this.testing = false});
 
   @override
   _HubRouteState createState() => _HubRouteState();
@@ -30,8 +32,10 @@ class _HubRouteState extends State<HubRoute> {
 
   @override
   Widget build(BuildContext context) {
-    widget.service.unsubscribe(order.OrderID.Invite);
-    widget.service.subscribe(order.OrderID.Invite, onInvite);
+    if (!widget.testing) {
+      widget.service.unsubscribe(order.OrderID.Invite);
+      widget.service.subscribe(order.OrderID.Invite, onInvite);
+    }
 
     handleClick(String name) {
       switch (name) {
@@ -107,30 +111,13 @@ class _HubRouteState extends State<HubRoute> {
           ),
         ],
       ),
-      body: Center(
-        child: ListView(
-          children: <Widget>[
-            for (var i in widget.service.invites)
-              Card(
-                child: Column(
-                  children: <Widget>[
-                    ListTile(
-                      leading: CircleAvatar(
-                        foregroundImage: NetworkImage(i.profile.picture),
-                      ),
-                      title: Text(i.profile.username),
-                      subtitle: Text(
-                        i.profile.platform,
-                      ),
-                      onTap: () {
-                        widget.service.acceptInvite(i.id);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: hub.Watchable(
+                widget.service.refreshWatchable, widget.service.watchables),
+          ),
+        ],
       ),
     );
   }

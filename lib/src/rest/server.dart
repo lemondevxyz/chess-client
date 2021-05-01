@@ -80,6 +80,25 @@ class Server implements ServerService {
     return c.future;
   }
 
+  // WatchableService
+  final watchables = HashMap<String, model.Watchable>();
+  Future<void> refreshWatchable() {
+    final c = Completer<void>();
+    _getRequest("watchable").then((String str) {
+      final Map<String, dynamic> m = jsonDecode(str);
+      m.forEach((index, d) {
+        final decode = model.Watchable.fromJson(d);
+        watchables[index] = decode;
+      });
+
+      c.complete();
+    }).catchError((e) {
+      c.completeError(e);
+    });
+
+    return c.future;
+  }
+
   // SubscribeService
   final Map<order.OrderID, Function(dynamic)> _event = {};
   void subscribe(order.OrderID id, Function(dynamic) callback) {
@@ -110,7 +129,7 @@ class Server implements ServerService {
   bool get playerTurn => _playerTurn;
   bool get inGame => _game != null;
   bool get p1 => inGame ? _game.p1 : null;
-  Board get board => inGame ? _game.board : null;
+  Board get board => inGame ? _game.brd : null;
 
   Future<HashMap<String, Point>> possib(int id) async {
     final c = Completer<HashMap<String, Point>>();
@@ -394,6 +413,8 @@ class Server implements ServerService {
     "avali": "avali",
     // where to get avaliable moves
     "possib": "possib",
+    // where to get watchable games
+    "watchable": "watchable",
   };
 
   final Map<String, String> _headers = {
@@ -482,7 +503,7 @@ class Server implements ServerService {
   void _gameReceiver(order.Game g) {
     _game = g;
     _notify(order.OrderID.Game, null);
-    // no need to clear invite. acceptInvite does it automatically.
+    cleanInvite();
   }
 
   void _doneReceiver(order.Done d) {

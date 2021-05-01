@@ -18,6 +18,11 @@ class Clickable extends StatefulWidget {
 class _ClickableState extends State<Clickable> {
   int focusid;
 
+  clear() {
+    widget.wdgt.markers.clearFocus();
+    widget.wdgt.markers.clearPossib();
+  }
+
   @override
   build(BuildContext build) {
     final brd = widget.wdgt.brd;
@@ -46,6 +51,17 @@ class _ClickableState extends State<Clickable> {
         if (mm != null) {
           final pec = mm.piece;
           // our piece?
+
+          if (focusid == mm.id) {
+            setState(() {
+              focusid = null;
+
+              clear();
+            });
+
+            return;
+          }
+
           if (pec.p1 == p1) {
             // are we focused at a previous piece?
             if (focusid != null) {
@@ -60,9 +76,6 @@ class _ClickableState extends State<Clickable> {
                 castling(focusid, mm.id);
 
                 setState(() {
-                  markers[1].points.clear();
-                  markers[0].points.clear();
-
                   focusid = null;
                 });
                 return;
@@ -70,17 +83,14 @@ class _ClickableState extends State<Clickable> {
             }
             // then select it
             setState(() {
-              markers[1].points.clear();
-              markers[0].points.clear();
-              markers[0].addPoint(<Point>[
-                dst,
-              ]);
+              clear();
+              markers.setFocus(dst);
 
               focusid = mm.id;
             });
 
             possib(mm.id).then((HashMap<String, Point> ll) {
-              markers[1].points.addAll(ll);
+              markers.addPossib(ll.values.toList(growable: false));
             }).then((_) {
               setState(() {});
             });
@@ -90,8 +100,7 @@ class _ClickableState extends State<Clickable> {
               move(focusid, dst);
 
               setState(() {
-                markers[1].points.clear();
-                markers[0].points.clear();
+                clear();
 
                 focusid = null;
               });
@@ -105,10 +114,7 @@ class _ClickableState extends State<Clickable> {
               focusid = null;
             });
 
-            setState(() {
-              markers[1].points.clear();
-              markers[0].points.clear();
-            });
+            setState(clear);
           }
         }
       },

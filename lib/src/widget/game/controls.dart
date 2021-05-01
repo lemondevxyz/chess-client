@@ -11,9 +11,11 @@ class Controls extends StatelessWidget {
   final bool isOurTurn;
   final bool isFinished;
 
+  final Axis dir;
+
   const Controls(this.service, this.toggleReverse, this.goToHub, this.isOurTurn,
       this.isFinished,
-      {Key key})
+      {Key key, this.dir = Axis.horizontal})
       : super(key: key);
 
   @override
@@ -54,8 +56,10 @@ class Controls extends StatelessWidget {
       size: size,
     );
 
-    return Row(
+    return Flex(
+      direction: dir,
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         IconButton(
           tooltip: "View previous move",

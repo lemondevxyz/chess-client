@@ -41,12 +41,12 @@ class Possible {
 class Watchable {
   final Profile p1;
   final Profile p2;
-  final Board board;
+  final Board brd;
 
-  const Watchable(this.p1, this.p2, this.board);
+  const Watchable(this.p1, this.p2, this.brd);
 
   Watchable.fromJson(Map<String, dynamic> json)
       : p1 = Profile.fromJson(json["p1"]),
         p2 = Profile.fromJson(json["p2"]),
-        board = Board.fromJson(json["board"]);
+        brd = Board.fromJson(json["brd"]);
 }

@@ -61,20 +61,43 @@ class Markers extends ChangeNotifier {
     notifyListeners();
   }
 
-  forEach(Function(Marker) fn) {
+  forEach(Function(Marker) fn, bool notify) {
     _data.forEach(fn);
+    if (notify) notifyListeners();
+  }
+
+  Markers(
+      {@required Color focus,
+      @required Color possib,
+      @required Color checkmate}) {
+    _data.add(Marker(checkmate));
+    _data.add(Marker(possib, drawOverPiece: true, circlePercentage: 0.5));
+    _data.add(Marker(focus));
+  }
+
+  _clear(int index) {
+    _data[index].points.clear();
     notifyListeners();
   }
 
-  Markers(Color focus, Color possib, Color checkmate) {
-    _data.add(Marker(checkmate));
-    _data.add(Marker(focus));
-    _data.add(Marker(possib, drawOverPiece: true, circlePercentage: 0.5));
+  clearPossib() => _clear(possib);
+  clearCheckmate() => _clear(checkmate);
+  clearFocus() => _clear(focus);
+
+  setCheckmate(Point src) {
+    _data[checkmate].addPoint(<Point>[src]);
+    notifyListeners();
   }
 
-  setCheckmate(Point src) => _data[checkmate].addPoint(<Point>[src]);
-  setFocus(Point src) => _data[focus].addPoint(<Point>[src]);
-  addPossib(List<Point> ps) => _data[possib].addPoint(ps);
+  setFocus(Point src) {
+    _data[focus].addPoint(<Point>[src]);
+    notifyListeners();
+  }
+
+  addPossib(List<Point> ps) {
+    _data[possib].addPoint(ps);
+    notifyListeners();
+  }
 
   operator [](int i) => _data[i];
   operator []=(int i, Marker value) => _data[i] = value;
@@ -101,7 +124,8 @@ class _BoardGraphics extends CustomPainter {
   double div = 0.0;
 
   _BoardGraphics(this.pri, this.sec, this.markerPoints, this.getPiece,
-      {this.reverse = false});
+      {this.reverse = false, Listenable repaint})
+      : super(repaint: repaint);
 
   Color getBackground(Point pnt) {
     final x = pnt.x;
@@ -155,7 +179,8 @@ class _BoardGraphics extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // well to make the canvas have 1:1 aspect ratio, pick the smaller (width or height), and set it as the size for each piece, square, or circle.
+    // well to make the canvas have 1:1 aspect ratio, pick the smaller shorterside
+    // then divide that by max(8) to set as a maximum size for each piece and marker
     final res = size.shortestSide;
     div = res / max;
 
@@ -175,30 +200,31 @@ class _BoardGraphics extends CustomPainter {
         paint.color = getBackground(Point(x, y));
         canvas.drawRect(rect, paint);
         // draw all markers
-        markerPoints.forEach((Marker mark) {
-          final callback = (Canvas canvas) {
-            if (mark.points.containsKey(pnt.toString())) {
-              final paint = Paint()..color = mark.color;
-              if (mark.circlePercentage != null) {
-                final scale = mark.circlePercentage;
+        if (markerPoints != null)
+          markerPoints.forEach((Marker mark) {
+            final callback = (Canvas canvas) {
+              if (mark.points.containsKey(pnt.toString())) {
+                final paint = Paint()..color = mark.color;
+                if (mark.circlePercentage != null) {
+                  final scale = mark.circlePercentage;
 
-                final radius = scale * (div / 2);
+                  final radius = scale * (div / 2);
 
-                final double diff = 1.0 / scale;
-                final x = minx + (radius * diff);
-                final y = miny + (radius * diff);
+                  final double diff = 1.0 / scale;
+                  final x = minx + (radius * diff);
+                  final y = miny + (radius * diff);
 
-                canvas.drawCircle(Offset(x, y), radius, paint);
-              } else
-                canvas.drawRect(rect, paint);
-            }
-          };
+                  canvas.drawCircle(Offset(x, y), radius, paint);
+                } else
+                  canvas.drawRect(rect, paint);
+              }
+            };
 
-          if (mark.drawOverPiece != null && mark.drawOverPiece == true)
-            drawers.add(callback);
-          else
-            callback(canvas);
-        });
+            if (mark.drawOverPiece != null && mark.drawOverPiece == true)
+              drawers.add(callback);
+            else
+              callback(canvas);
+          }, false);
 
         final pec = getPiece(pnt);
         // draw the piece
@@ -281,42 +307,28 @@ class _BoardGraphics extends CustomPainter {
       old.reverse != reverse;
 }
 
-class Board extends StatefulWidget {
+class Board extends StatelessWidget {
+  //StatefulWidget {
   final board.Board brd;
   final Markers markers;
   final _BoardGraphics graphics;
 
   Board(this.brd, this.markers)
-      : graphics = _BoardGraphics(Colors.white, Colors.blueGrey, markers,
-            (Point src) => brd.get(src).piece);
-
-  @override
-  createState() => _BoardState();
-}
-
-class _BoardState extends State<Board> {
-  @override
-  initState() {
-    widget.brd.addListener(redraw);
-    widget.markers.addListener(redraw);
-    super.initState();
-  }
-
-  @override
-  dispose() {
-    widget.brd.removeListener(redraw);
-    widget.markers.addListener(redraw);
-    super.dispose();
-  }
-
-  void redraw() {
-    setState(() {});
-  }
+      : graphics = _BoardGraphics(
+          Colors.white,
+          Colors.blueGrey,
+          markers,
+          (Point src) {
+            final mm = brd.get(src);
+            return mm == null ? null : mm.piece;
+          },
+          repaint: Listenable.merge(<Listenable>[brd, markers]),
+        );
 
   @override
   build(BuildContext context) {
     return CustomPaint(
-      painter: widget.graphics,
+      painter: graphics,
       child: Container(),
     );
   }

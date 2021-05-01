@@ -59,12 +59,17 @@ class _ProfileIcon extends StatelessWidget {
 class Profile extends StatelessWidget {
   final model.Profile profile;
   final Map<int, int> deadPieces;
-  final Color clr;
+  final bool p1;
 
-  const Profile(this.profile, this.deadPieces, {this.clr = Colors.white});
+  Profile(this.profile, this.p1, this.deadPieces);
+
+  static final Color p1clr = Colors.grey[300];
+  static final Color p2clr = Colors.grey[700];
 
   @override
   build(BuildContext context) {
+    final clr = p1 == true ? p1clr : p2clr;
+
     return Container(
       child: ListTile(
         leading: CircleAvatar(
@@ -73,9 +78,9 @@ class Profile extends StatelessWidget {
         title: Text(profile.username),
         subtitle: Row(
           children: <Widget>[
-            for (int index in deadPieces.keys)
-              _ProfileIcon(
-                  PieceKind.getIcon(index), deadPieces[index], this.clr),
+            if (deadPieces != null)
+              for (int index in deadPieces.keys)
+                _ProfileIcon(PieceKind.getIcon(index), deadPieces[index], clr),
           ],
         ),
       ),

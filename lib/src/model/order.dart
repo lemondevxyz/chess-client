@@ -70,14 +70,14 @@ class Invite {
 }
 
 class Game {
-  final Board board;
+  final Board brd;
   final Profile profile;
   final bool p1;
 
-  const Game(this.board, this.profile, this.p1);
+  const Game(this.brd, this.profile, this.p1);
 
   Game.fromJson(Map<String, dynamic> json)
-      : board = Board.fromJson(json["board"]),
+      : brd = Board.fromJson(json["brd"]),
         p1 = json["p1"],
         profile = Profile.fromJson(json["profile"]);
 }
