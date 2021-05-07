@@ -238,7 +238,13 @@ class Board with ChangeNotifier implements rest.HistoryService {
     final m = <int, int>{};
 
     getRange(p1).forEach((int i) {
-      if (_data[i].pos.equal(Point(-1, -1))) m[_data[i].kind]++;
+      if (_data[i].pos.equal(Point(-1, -1))) {
+        if (!m.containsKey(_data[i].kind)) {
+          m[_data[i].kind] = 1;
+        } else {
+          m[_data[i].kind]++;
+        }
+      }
     });
 
     return m;

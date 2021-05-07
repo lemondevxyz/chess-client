@@ -33,7 +33,7 @@ abstract class BoardService {
   bool get p1;
   bool get playerTurn;
 
-  model.Profile get vsprofile;
+  model.GameProfile get profile;
 
   Future<HashMap<String, Point>> possib(int id);
   Future<void> move(int id, Point dst);
@@ -59,12 +59,14 @@ abstract class HistoryService {
 abstract class WatchableService {
   Future<void> refreshWatchable();
   HashMap<String, model.Watchable> get watchables;
+  Future<void> joinWatchable(model.Generic m);
+  Future<void> leaveWatchable();
 }
 
 abstract class InviteService {
   Future<List<model.Profile>> getAvaliableUsers();
-  Future<void> acceptInvite(String id);
-  Future<void> invite(String id, String platform);
+  Future<void> acceptInvite(order.Invite inv);
+  Future<void> invite(model.Profile pro);
   List<order.Invite> get invites;
 }
 
@@ -75,7 +77,7 @@ abstract class SubscribeService {
 }
 
 abstract class WebsocketService {
-  model.Profile get profile;
+  model.Profile get playerprofile;
 
   Future<void> connect();
   Future<void> disconnect();

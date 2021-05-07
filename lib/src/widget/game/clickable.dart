@@ -76,6 +76,7 @@ class _ClickableState extends State<Clickable> {
                 castling(focusid, mm.id);
 
                 setState(() {
+                  clear();
                   focusid = null;
                 });
                 return;

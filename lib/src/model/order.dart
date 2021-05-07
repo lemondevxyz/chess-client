@@ -79,7 +79,8 @@ class Game {
   Game.fromJson(Map<String, dynamic> json)
       : brd = Board.fromJson(json["brd"]),
         p1 = json["p1"],
-        profile = Profile.fromJson(json["profile"]);
+        profile =
+            json["profile"] != null ? Profile.fromJson(json["profile"]) : null;
 }
 
 class Move {
@@ -153,14 +154,48 @@ class Castling {
       };
 }
 
+class DoneReason {
+  static const whiteWon = 1;
+  static const blackWon = 2;
+  // lamo im not gonna use this
+  static const stalemate = 3;
+  static const whiteForfeit = 4;
+  static const blackForfeit = 5;
+  static const spectatorLeft = 6;
+
+  static String getString(int result, bool p1) {
+    if (result == 1 || result == 2) {
+      final won = result == 1 ? true : false;
+
+      if (won == p1)
+        return "You won";
+      else
+        return "You lost";
+    } else {
+      final str = name[result];
+      return str != null ? str : "undefined behaivour";
+    }
+  }
+
+  static const name = <int, String>{
+    whiteWon: "White won",
+    blackWon: "Black won",
+    stalemate: "Stalemate",
+    whiteForfeit: "White Forfeits",
+    blackForfeit: "Black Forfeits",
+  };
+}
+
 class Done {
-  final bool p1;
+  final int reason;
 
-  Done(this.p1);
+  Done(this.reason);
 
-  Done.fromJson(Map<String, dynamic> json) : p1 = json["p1"];
+  Done.fromJson(Map<String, dynamic> json) : reason = json["reason"];
+
+  String toString() => DoneReason.name[reason];
 
   Map<String, dynamic> toJson() => {
-        "p1": p1,
+        "reason": reason,
       };
 }

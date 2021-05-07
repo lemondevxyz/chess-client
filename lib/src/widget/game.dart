@@ -8,6 +8,7 @@ import 'package:chess_client/src/widget/game/controls.dart' as game;
 import 'package:chess_client/src/widget/game/profile.dart' as game;
 
 import 'package:chess_client/icons.dart' as icons;
+import 'package:chess_client/src/widget/game/promotion.dart';
 import 'package:flutter/material.dart';
 
 class GameRoute extends StatefulWidget {
@@ -15,34 +16,67 @@ class GameRoute extends StatefulWidget {
   final void Function() goToHub;
   final bool testing;
   final GlobalKey<NavigatorState> _navigator;
-  final bool spectating;
 
   final _brd = board.Board();
 
   GameRoute(this.service, this.goToHub, this._navigator,
-      {this.testing = false, this.spectating = false});
+      {this.testing = false});
 
   @override
   createState() => _GameState();
 }
 
 class _GameState extends State<GameRoute> {
-  bool get isOurTurn => false;
+  bool get isOurTurn {
+    if (widget.service.p1 != null)
+      return widget.service.p1 == widget.service.playerTurn;
+    else
+      return false;
+  }
+
+  bool get spectating => widget.service.p1 == null;
   bool isReverse = false;
   bool isFinished = false;
+
   Key redrawControls;
 
   game.Markers markers;
 
-  onTurn(_) => redrawControls = UniqueKey();
+  onPromote(dynamic d) {
+    if (!(d is order.Promote)) throw "onPromote: !(d is order.Promote)";
+
+    final promote = d as order.Promote;
+
+    setState(() {
+      showDialog(
+        context: widget._navigator.currentContext,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Promote your piece"),
+            content: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Promotion(widget.service.p1, (int kind) {
+                widget.service.promote(promote.id, kind).then((_) {
+                  Navigator.of(context).pop();
+                }).catchError((e) {
+                  print("promote: $e");
+                });
+              }),
+            ),
+          );
+        },
+        barrierDismissible: false,
+      );
+    });
+  }
+
+  onTurn(_) => setState(() {
+        redrawControls = UniqueKey();
+      });
 
   onDone(dynamic parameter) {
     final done = parameter as order.Done;
-    String title = "Draw";
-    if (done.p1 != null) {
-      final won = done.p1 == widget.service.p1;
-      title = won ? "You won" : "You Lost";
-    }
+    final title = order.DoneReason.getString(done.reason, widget.service.p1);
 
     dialog(
         title, "You can stay here to analyse the game\nor go back to the hub");
@@ -50,19 +84,28 @@ class _GameState extends State<GameRoute> {
 
   @override
   initState() {
+    widget.service.subscribe(order.OrderID.Promote, onPromote);
     widget.service.subscribe(order.OrderID.Turn, onTurn);
     widget.service.subscribe(order.OrderID.Done, onDone);
+
+    if (widget.service.p1 != null) isReverse = !widget.service.p1;
 
     super.initState();
   }
 
   @override
   dispose() {
+    widget.service.unsubscribe(order.OrderID.Promote);
+    widget.service.unsubscribe(order.OrderID.Turn);
+    widget.service.unsubscribe(order.OrderID.Done);
+
     super.dispose();
   }
 
   void toggleReverse() {
-    isReverse = !isReverse;
+    setState(() {
+      isReverse = !isReverse;
+    });
   }
 
   void dialog(String title, String description) {
@@ -101,11 +144,6 @@ class _GameState extends State<GameRoute> {
 
   @override
   Widget build(BuildContext context) {
-    bool p1 = true;
-    if (!widget.testing) {
-      p1 = widget.service.p1;
-    }
-
     if (markers == null) {
       markers = game.Markers(
         checkmate: Theme.of(context).errorColor,
@@ -116,7 +154,7 @@ class _GameState extends State<GameRoute> {
 
     final brd = !widget.testing ? widget.service.board : widget._brd;
 
-    final wdgt = game.Board(brd, markers);
+    final wdgt = game.Board(brd, markers, reverse: this.isReverse);
 
     model.Profile top;
     model.Profile bot;
@@ -130,11 +168,16 @@ class _GameState extends State<GameRoute> {
       bot = model.Profile("1", "https://lemondev.xyz/android-icon-192x192.png",
           "white player", "client");
     } else {
-      top = !p1 ? widget.service.profile : widget.service.vsprofile;
-      topp1 = false;
+      if (widget.service.profile == null) {
+        top = model.Profile("black", "", "black", "");
+        bot = model.Profile("white", "", "white", "");
+      } else {
+        top = widget.service.profile.black;
+        topp1 = false;
 
-      bot = p1 ? widget.service.vsprofile : widget.service.profile;
-      botp1 = true;
+        bot = widget.service.profile.white;
+        botp1 = true;
+      }
 
       if (isReverse) {
         model.Profile placeholder = top;
@@ -173,23 +216,24 @@ class _GameState extends State<GameRoute> {
               final p1 = game.Profile(top, topp1, brd.deadPieces(topp1));
               final p2 = game.Profile(bot, botp1, brd.deadPieces(botp1));
               final cntrls = game.Controls(brd, toggleReverse, widget.goToHub,
-                  isOurTurn, isFinished || widget.spectating,
+                  isOurTurn, isFinished || spectating,
                   dir: dir == Axis.vertical ? Axis.horizontal : Axis.vertical,
                   key: redrawControls);
               final brdwidget = Expanded(
-                child: (isFinished || widget.testing)
+                child: (isFinished || widget.testing || spectating)
                     ? wdgt
                     : game.Clickable(wdgt, widget.service),
               );
 
               if (dir == Axis.vertical) {
                 return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     p1,
-                    AspectRatio(
-                      aspectRatio: 1.0,
-                      child: brdwidget,
+                    Flexible(
+                      child: AspectRatio(
+                        aspectRatio: 1.0,
+                        child: brdwidget,
+                      ),
                     ),
                     p2,
                     cntrls,

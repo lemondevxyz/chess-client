@@ -31,6 +31,12 @@ class _HubRouteState extends State<HubRoute> {
   }
 
   @override
+  dispose() {
+    widget.service.watchables.clear();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (!widget.testing) {
       widget.service.unsubscribe(order.OrderID.Invite);
@@ -66,8 +72,7 @@ class _HubRouteState extends State<HubRoute> {
                                         profile.platform,
                                       ),
                                       onTap: () {
-                                        widget.service.invite(
-                                            profile.id, profile.platform);
+                                        widget.service.invite(profile);
                                       },
                                     ),
                                   ],
@@ -114,8 +119,8 @@ class _HubRouteState extends State<HubRoute> {
       body: Column(
         children: <Widget>[
           Expanded(
-            child: hub.Watchable(
-                widget.service.refreshWatchable, widget.service.watchables),
+            child: hub.Watchable(widget.service.refreshWatchable,
+                widget.service.watchables, widget.service.joinWatchable),
           ),
         ],
       ),

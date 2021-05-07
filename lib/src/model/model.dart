@@ -1,4 +1,5 @@
 import 'package:chess_client/src/board/board.dart';
+import 'package:flutter/cupertino.dart';
 
 class Profile {
   final String id;
@@ -49,4 +50,26 @@ class Watchable {
       : p1 = Profile.fromJson(json["p1"]),
         p2 = Profile.fromJson(json["p2"]),
         brd = Board.fromJson(json["brd"]);
+}
+
+class Generic {
+  final String id;
+
+  const Generic(this.id);
+
+  Generic.fromJson(Map<String, dynamic> json) : id = json["id"];
+
+  Map<String, dynamic> toJson() => {"id": id};
+}
+
+// not actually defined in server, just to make getting profile easier...
+class GameProfile extends ChangeNotifier {
+  Profile white;
+  Profile black;
+
+  GameProfile(this.white, this.black);
+
+  GameProfile.fromJson(Map<String, dynamic> json)
+      : white = Profile.fromJson(json["p1"]),
+        black = Profile.fromJson(json["p2"]);
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:isolate';
 
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
@@ -21,12 +22,13 @@ class Server implements ServerService {
   final _inviteTimers = List<Timer>.empty(growable: true);
 
   List<order.Invite> get invites => _invites.toList(growable: false);
-  Future<void> invite(String id, String platform) async {
+  Future<void> invite(model.Profile pro) async {
     if (!inGame) {
-      final inv = order.Invite(id);
-      inv.platform = platform;
-
-      return _postRequest(Server.routes["invite"], jsonEncode(inv.toJson()));
+      return _postRequest(
+          Server.routes["invite"],
+          jsonEncode(<String, dynamic>{
+            "profile": pro.toJson(),
+          }));
     }
 
     return Future.error("in game");
@@ -38,21 +40,22 @@ class Server implements ServerService {
       if (t != null) t.cancel();
     });
     _inviteTimers.clear();
-
-    _notify(order.OrderID.Invite, null);
   }
 
-  Future<void> acceptInvite(String id) async {
+  Future<void> acceptInvite(order.Invite ord) async {
     if (!inGame) {
       final fut = Completer<void>();
       this
-          ._postRequest(
-              Server.routes["accept"], jsonEncode(order.Invite(id).toJson()))
+          ._postRequest(Server.routes["accept"], jsonEncode(ord.toJson()))
           .then((_) {
         fut.complete();
         cleanInvite();
+        _notify(order.OrderID.Invite, null);
       }).catchError((e) {
-        _invites.remove(id);
+        _invites.remove(ord);
+
+        _notify(order.OrderID.Invite, null);
+
         fut.completeError(e);
       });
 
@@ -84,13 +87,45 @@ class Server implements ServerService {
   final watchables = HashMap<String, model.Watchable>();
   Future<void> refreshWatchable() {
     final c = Completer<void>();
-    _getRequest("watchable").then((String str) {
+    _getRequest(routes["watchable/list"]).then((String str) {
       final Map<String, dynamic> m = jsonDecode(str);
       m.forEach((index, d) {
         final decode = model.Watchable.fromJson(d);
         watchables[index] = decode;
       });
 
+      c.complete();
+    }).catchError((e) {
+      c.completeError(e);
+    });
+
+    return c.future;
+  }
+
+  Future<void> joinWatchable(model.Generic m) {
+    final c = Completer<void>();
+    _postRequest(routes["watchable/join"], jsonEncode(m)).then((String s) {
+      try {
+        _profile = model.GameProfile.fromJson(jsonDecode(s));
+        if (_game != null) {
+          _notify(order.OrderID.Game, null);
+          cleanInvite();
+        }
+
+        c.complete();
+      } catch (e) {
+        c.completeError(e);
+      }
+    }).catchError((e) {
+      c.completeError(e);
+    });
+
+    return c.future;
+  }
+
+  Future<void> leaveWatchable() {
+    final c = Completer<void>();
+    _postRequest(routes["watchable/leave"], "").then((_) {
       c.complete();
     }).catchError((e) {
       c.completeError(e);
@@ -129,6 +164,10 @@ class Server implements ServerService {
   bool get playerTurn => _playerTurn;
   bool get inGame => _game != null;
   bool get p1 => inGame ? _game.p1 : null;
+
+  model.GameProfile _profile;
+  model.GameProfile get profile => _profile;
+
   Board get board => inGame ? _game.brd : null;
 
   Future<HashMap<String, Point>> possib(int id) async {
@@ -156,7 +195,7 @@ class Server implements ServerService {
 
     return _sendCommand(order.Order(
       order.OrderID.Done,
-      order.Done(p1),
+      order.Done(0),
     ));
   }
 
@@ -228,8 +267,7 @@ class Server implements ServerService {
   // WebsocketService
   order.Credentials _credentials;
 
-  model.Profile get profile => _credentials.profile;
-  model.Profile get vsprofile => _game.profile;
+  model.Profile get playerprofile => _credentials.profile;
 
   WebSocket _socket;
 
@@ -414,7 +452,11 @@ class Server implements ServerService {
     // where to get avaliable moves
     "possib": "possib",
     // where to get watchable games
-    "watchable": "watchable",
+    "watchable/list": "watchable/list",
+    // where to join watchable games
+    "watchable/join": "watchable/join",
+    // where to leave current watchable game
+    "watchable/leave": "watchable/leave",
   };
 
   final Map<String, String> _headers = {
@@ -451,7 +493,7 @@ class Server implements ServerService {
     }
 
     final c = Completer<String>();
-    final String url = conf.http(route);
+    final String url = conf.http(routes[route]);
 
     try {
       http.post(url, body: data, headers: _headers).then((r) {
@@ -500,10 +542,19 @@ class Server implements ServerService {
     }));
   }
 
-  void _gameReceiver(order.Game g) {
+  void _gameReceiver(order.Game g) async {
     _game = g;
-    _notify(order.OrderID.Game, null);
-    cleanInvite();
+    if (_game.profile != null) {
+      final p1 = g.p1;
+
+      _profile = model.GameProfile(
+        p1 ? playerprofile : _game.profile,
+        !p1 ? playerprofile : _game.profile,
+      );
+
+      _notify(order.OrderID.Game, null);
+      cleanInvite();
+    }
   }
 
   void _doneReceiver(order.Done d) {

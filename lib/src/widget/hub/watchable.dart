@@ -1,6 +1,3 @@
-import 'dart:collection';
-
-import 'package:chess_client/src/board/board.dart' as board;
 import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/widget/game/board.dart';
 import 'package:chess_client/src/widget/game/profile.dart' as game;
@@ -10,8 +7,9 @@ import 'package:flutter/rendering.dart';
 class Watchable extends StatefulWidget {
   final Future<void> Function() refresh;
   final Map<String, model.Watchable> set;
+  final Future<void> Function(model.Generic m) spectate;
 
-  const Watchable(this.refresh, this.set);
+  const Watchable(this.refresh, this.set, this.spectate);
 
   @override
   createState() => _WatchableState();
@@ -33,8 +31,9 @@ class _WatchableState extends State<Watchable> {
               TextButton(
                 child: Text("Refresh List"),
                 onPressed: () {
+                  widget.set.clear();
                   widget.refresh().then((_) {
-                    setState(() {});
+                    if (mounted) setState(() {});
                   });
                 },
               ),
@@ -79,7 +78,17 @@ class _WatchableState extends State<Watchable> {
                                       widget.set[id].brd.deadPieces(true)),
                                 ),
                                 TextButton(
-                                    child: Text("Spectate"), onPressed: () {}),
+                                    child: Text("Spectate"),
+                                    onPressed: () {
+                                      widget
+                                          .spectate(model.Generic(id))
+                                          .catchError((_) {
+                                        widget.set.clear();
+                                        widget.refresh().then((_) {
+                                          if (mounted) setState(() {});
+                                        });
+                                      });
+                                    }),
                               ],
                             ),
                           ],

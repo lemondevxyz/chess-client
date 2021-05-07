@@ -29,52 +29,46 @@ class Promotion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (BuildContext ctx, BoxConstraints box) {
-      final size = box.maxWidth / 7;
-      return Container(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            for (var kind in list)
-              TextButton(
-                child: Text(
-                  //PieceKind.getIcon(pec.kind),
-                  String.fromCharCode(PieceKind.getIcon(kind).codePoint),
-                  style: TextStyle(
-                    color: iconclr,
-                    fontSize: size,
-                    fontFamily: PieceKind.getIcon(kind).fontFamily,
-                    shadows: <Shadow>[
-                      Shadow(
-                        color: shadowclr,
-                        offset: offset[0],
-                        blurRadius: shadowblur,
-                      ),
-                      Shadow(
-                        color: shadowclr,
-                        offset: offset[1],
-                        blurRadius: shadowblur,
-                      ),
-                      Shadow(
-                        color: shadowclr,
-                        offset: offset[2],
-                        blurRadius: shadowblur,
-                      ),
-                      Shadow(
-                        color: shadowclr,
-                        offset: offset[3],
-                        blurRadius: shadowblur,
-                      ),
-                    ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: <Widget>[
+        for (var kind in list)
+          TextButton(
+            child: Text(
+              String.fromCharCode(PieceKind.getIcon(kind).codePoint),
+              style: TextStyle(
+                color: iconclr,
+                fontSize: 48.0,
+                fontFamily: PieceKind.getIcon(kind).fontFamily,
+                shadows: <Shadow>[
+                  Shadow(
+                    color: shadowclr,
+                    offset: offset[0],
+                    blurRadius: shadowblur,
                   ),
-                ),
-                onPressed: () {
-                  promoteCallback(kind);
-                },
+                  Shadow(
+                    color: shadowclr,
+                    offset: offset[1],
+                    blurRadius: shadowblur,
+                  ),
+                  Shadow(
+                    color: shadowclr,
+                    offset: offset[2],
+                    blurRadius: shadowblur,
+                  ),
+                  Shadow(
+                    color: shadowclr,
+                    offset: offset[3],
+                    blurRadius: shadowblur,
+                  ),
+                ],
               ),
-          ],
-        ),
-      );
-    });
+            ),
+            onPressed: () {
+              promoteCallback(kind);
+            },
+          ),
+      ],
+    );
   }
 }

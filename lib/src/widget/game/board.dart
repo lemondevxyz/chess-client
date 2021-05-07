@@ -313,7 +313,7 @@ class Board extends StatelessWidget {
   final Markers markers;
   final _BoardGraphics graphics;
 
-  Board(this.brd, this.markers)
+  Board(this.brd, this.markers, {bool reverse = false})
       : graphics = _BoardGraphics(
           Colors.white,
           Colors.blueGrey,
@@ -323,6 +323,7 @@ class Board extends StatelessWidget {
             return mm == null ? null : mm.piece;
           },
           repaint: Listenable.merge(<Listenable>[brd, markers]),
+          reverse: reverse,
         );
 
   @override
