@@ -105,8 +105,8 @@ class Markers extends ChangeNotifier {
 
 class _BoardGraphics extends CustomPainter {
   static int max = 8;
-  // how to much resize piece icons
-  static double txtrm = 25;
+  // don't go over 0.8
+  static double iconPercentage = 0.7;
   // these are for piece shadows
   static double cShadowOffset = 2.0;
   static double cShadowBlur = 0.0;
@@ -157,11 +157,35 @@ class _BoardGraphics extends CustomPainter {
       ),
     );
 
+    final shadowclr = getBackground(Point(x, y));
+
     builder.pushStyle(ui.TextStyle(
       color: getBackground(Point(x + 1, y)),
       fontSize: indicatorSize,
       fontWeight: FontWeight.bold,
       fontFamily: "monospace",
+      shadows: <Shadow>[
+        Shadow(
+          color: shadowclr,
+          offset: Offset(0, cShadowOffset),
+          blurRadius: cShadowBlur,
+        ),
+        Shadow(
+          color: shadowclr,
+          offset: Offset(0, cShadowOffset * -1),
+          blurRadius: cShadowBlur,
+        ),
+        Shadow(
+          color: shadowclr,
+          offset: Offset(cShadowOffset, 0),
+          blurRadius: cShadowBlur,
+        ),
+        Shadow(
+          color: shadowclr,
+          offset: Offset(cShadowOffset * -1, 0),
+          blurRadius: cShadowBlur,
+        ),
+      ],
     ));
     builder.addText(str);
 
@@ -239,9 +263,10 @@ class _BoardGraphics extends CustomPainter {
               ),
             );
 
+            final sz = div * iconPercentage;
             builder.pushStyle(ui.TextStyle(
               color: clr,
-              fontSize: div - txtrm,
+              fontSize: sz,
               fontFamily: icon.fontFamily,
               shadows: <Shadow>[
                 Shadow(
@@ -269,13 +294,16 @@ class _BoardGraphics extends CustomPainter {
             builder.addText(String.fromCharCode(icon.codePoint));
 
             final para = builder.build();
-            para.layout(ui.ParagraphConstraints(width: div - txtrm));
+            para.layout(ui.ParagraphConstraints(width: sz));
 
             canvas.save();
 
             // canvas.drawPaint(Paint()..color = shadowclr);
             canvas.drawParagraph(
-                para, Offset(minx + (txtrm / 2), miny + (txtrm / 2)));
+              para,
+              Offset(minx + ((0.9 - iconPercentage) * sz),
+                  miny + ((0.9 - iconPercentage) * sz)),
+            );
 
             canvas.restore();
           }
@@ -292,7 +320,7 @@ class _BoardGraphics extends CustomPainter {
         }
         if (y == 7) {
           minx = (minx + div) - (indicatorSize);
-          miny = (miny + div) - (indicatorSize);
+          miny = (miny + div) - (indicatorSize * (indicatorPercentage + 1.1));
           drawIndicator(canvas, minx, miny, x, letter: true);
         }
       }
