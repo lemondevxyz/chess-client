@@ -87,6 +87,9 @@ class Server implements ServerService {
   final watchables = HashMap<String, model.Watchable>();
   Future<void> refreshWatchable() {
     final c = Completer<void>();
+
+    watchables.clear();
+
     _getRequest(routes["watchable/list"]).then((String str) {
       final Map<String, dynamic> m = jsonDecode(str);
       m.forEach((index, d) {

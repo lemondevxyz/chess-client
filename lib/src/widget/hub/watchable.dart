@@ -18,8 +18,11 @@ class Watchable extends StatefulWidget {
 class _WatchableState extends State<Watchable> {
   @override
   Widget build(BuildContext context) {
+    double sz = MediaQuery.of(context).size.shortestSide / 1.5;
+    sz = sz > 400 ? sz : 400;
+
     return Container(
-      padding: const EdgeInsets.all(25.0),
+      padding: EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,11 +30,15 @@ class _WatchableState extends State<Watchable> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text("Watchable", style: Theme.of(context).textTheme.headline3),
+              Text(
+                "Watchable",
+                style: Theme.of(context).textTheme.headline3,
+                textAlign: TextAlign.left,
+              ),
               TextButton(
                 child: Text("Refresh List"),
                 onPressed: () {
-                  widget.set.clear();
+                  //widget.set.clear();
                   widget.refresh().then((_) {
                     if (mounted) setState(() {});
                   });
@@ -40,62 +47,62 @@ class _WatchableState extends State<Watchable> {
             ],
           ),
           Container(
-            child: Text(
-              "Choose a game to spectate",
-              textAlign: TextAlign.left,
-            ),
+            child: Text("Choose a game to spectate", textAlign: TextAlign.left),
           ),
           Expanded(
-            child: Container(
-              margin: EdgeInsets.only(top: 25),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: <Widget>[
-                  for (String id in widget.set.keys)
-                    Container(
-                      width: 400,
-                      height: 400,
-                      margin: EdgeInsets.symmetric(horizontal: 10),
-                      child: AspectRatio(
-                        aspectRatio: 0.5,
-                        child: Column(
-                          children: <Widget>[
-                            game.Profile(widget.set[id].p2, false,
-                                widget.set[id].brd.deadPieces(false)),
-                            AspectRatio(
-                              aspectRatio: 1.0,
-                              child: Board(
-                                widget.set[id].brd,
-                                null,
-                              ),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                Expanded(
-                                  child: game.Profile(widget.set[id].p1, true,
-                                      widget.set[id].brd.deadPieces(true)),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SizedBox(
+                height: sz,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: <Widget>[
+                    for (var id in widget.set.keys)
+                      Container(
+                        //padding: EdgeInsets.only(right: 5.0),
+                        child: AspectRatio(
+                          aspectRatio: 1.0,
+                          child: Column(
+                            children: <Widget>[
+                              game.Profile(widget.set[id].p2, false,
+                                  widget.set[id].brd.deadPieces(false)),
+                              Expanded(
+                                child: AspectRatio(
+                                  aspectRatio: 1.0,
+                                  child: Board(
+                                    widget.set[id].brd,
+                                    null,
+                                  ),
                                 ),
-                                TextButton(
-                                    child: Text("Spectate"),
-                                    onPressed: () {
-                                      widget
-                                          .spectate(model.Generic(id))
-                                          .catchError((_) {
-                                        widget.set.clear();
-                                        widget.refresh().then((_) {
-                                          if (mounted) setState(() {});
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Expanded(
+                                    child: game.Profile(widget.set[id].p1, true,
+                                        widget.set[id].brd.deadPieces(true)),
+                                  ),
+                                  TextButton(
+                                      child: Text("Spectate"),
+                                      onPressed: () {
+                                        widget
+                                            .spectate(model.Generic(id))
+                                            .catchError((_) {
+                                          widget.set.clear();
+                                          widget.refresh().then((_) {
+                                            if (mounted) setState(() {});
+                                          });
                                         });
-                                      });
-                                    }),
-                              ],
-                            ),
-                          ],
+                                      }),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

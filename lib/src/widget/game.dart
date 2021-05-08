@@ -219,11 +219,9 @@ class _GameState extends State<GameRoute> {
                   isOurTurn, isFinished || spectating,
                   dir: dir == Axis.vertical ? Axis.horizontal : Axis.vertical,
                   key: redrawControls);
-              final brdwidget = Expanded(
-                child: (isFinished || widget.testing || spectating)
-                    ? wdgt
-                    : game.Clickable(wdgt, widget.service),
-              );
+              final brdwidget = (isFinished || widget.testing || spectating)
+                  ? wdgt
+                  : game.Clickable(wdgt, widget.service);
 
               if (dir == Axis.vertical) {
                 return Column(
@@ -254,7 +252,9 @@ class _GameState extends State<GameRoute> {
                         child: Column(
                           children: <Widget>[
                             p1,
-                            brdwidget,
+                            Expanded(
+                              child: brdwidget,
+                            ),
                             p2,
                           ],
                         ),

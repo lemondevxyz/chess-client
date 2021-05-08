@@ -1,3 +1,4 @@
+import 'package:chess_client/src/board/board.dart' as board;
 import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/rest/interface.dart' as rest;
@@ -29,6 +30,8 @@ class _HubRouteState extends State<HubRoute> {
       });
     }
   }
+
+  final watchables = <String, model.Watchable>{};
 
   @override
   dispose() {
@@ -116,14 +119,59 @@ class _HubRouteState extends State<HubRoute> {
           ),
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: hub.Watchable(widget.service.refreshWatchable,
-                widget.service.watchables, widget.service.joinWatchable),
-          ),
-        ],
-      ),
+      body: LayoutBuilder(builder: (_, BoxConstraints cst) {
+        final dir =
+            cst.maxWidth > cst.maxHeight ? Axis.vertical : Axis.horizontal;
+
+        return ListView(
+          scrollDirection: dir,
+          children: <Widget>[
+            /*
+            Flex(
+              direction:
+                  dir == Axis.horizontal ? Axis.vertical : Axis.horizontal,
+              children: <Widget>[
+                Text("Avaliable Users"),
+                Text("Invite"),
+              ],
+            ),
+            */
+            SizedBox(
+              height: cst.maxHeight,
+              width: cst.maxWidth,
+              child: !widget.testing
+                  ? hub.Watchable(
+                      widget.service.refreshWatchable,
+                      widget.service.watchables,
+                      widget.service.joinWatchable,
+                    )
+                  : hub.Watchable(
+                      () {
+                        watchables[UniqueKey().toString()] = model.Watchable(
+                          model.Profile(
+                            "white",
+                            "white",
+                            "white",
+                            "white",
+                          ),
+                          model.Profile(
+                            "black",
+                            "black",
+                            "black",
+                            "black",
+                          ),
+                          board.Board(),
+                        );
+
+                        return Future.value(null);
+                      },
+                      watchables,
+                      (_) {},
+                    ),
+            ),
+          ],
+        );
+      }),
     );
   }
 }

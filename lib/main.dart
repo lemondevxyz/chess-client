@@ -14,7 +14,7 @@ class Debugging {
 
 rest.Server server = rest.Server(
     rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
-const debug = Debugging.none;
+const debug = Debugging.hub;
 
 void main() {
   runApp(App());
