@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chess_client/src/board/board.dart' as board;
 import 'package:chess_client/src/model/model.dart' as model;
 import 'package:chess_client/src/model/order.dart' as order;
@@ -38,10 +40,21 @@ class _HubRouteState extends State<HubRoute> {
 
   final available = <order.Invite>[];
 
+  void addUsersTimer(Timer t) {
+    if (mounted || invites.length < 10)
+      setState(() {
+        invites.add(order.Invite(
+          model.Profile("id", "picture", "username", "platform"),
+        ));
+      });
+  }
+
   @override
   initState() {
     if (!widget.testing)
       widget.service.subscribe(order.OrderID.Invite, onInvite);
+    else
+      Timer.periodic(Duration(seconds: 1), addUsersTimer);
 
     super.initState();
   }
@@ -72,6 +85,13 @@ class _HubRouteState extends State<HubRoute> {
       widget.service.getAvaliableUsers().then((List<model.Profile> list) {
         profileToInvite(list);
       });
+    else {
+      setState(() {
+        available.add(order.Invite(
+          model.Profile("id", "picture", "username", "platform"),
+        ));
+      });
+    }
 
     return Future.value(null);
   }
@@ -111,16 +131,16 @@ class _HubRouteState extends State<HubRoute> {
 
               return Future.value(null);
             },
-            refresh: refreshUsers,
             title: "Invite",
             description:
                 "Invite an available user to play with, invites expire after 30 seconds.",
+            refresh: refreshUsers,
           );
 
           bool increaseHeight = false;
 
           Axis invaxis = cst.maxWidth >= md ? rev : Axis.vertical;
-          if (cst.maxHeight < md) {
+          if (cst.maxHeight < sm) {
             invaxis = Axis.vertical;
             increaseHeight = true;
           }

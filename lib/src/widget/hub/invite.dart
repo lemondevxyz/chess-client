@@ -20,6 +20,8 @@ class Invite extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
+    final _controller = ScrollController();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -36,7 +38,7 @@ class Invite extends StatelessWidget {
                   description,
                   textAlign: TextAlign.left,
                 ),
-                padding: EdgeInsets.symmetric(horizontal: 5.0),
+                padding: EdgeInsets.only(left: 5.0, right: 5.0, bottom: 5.0),
               ),
             ),
             if (refresh != null)
@@ -48,20 +50,26 @@ class Invite extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ListView(
-            scrollDirection: Axis.vertical,
-            children: <Widget>[
-              for (var pro in list)
-                GestureDetector(
-                  onTap: () {
-                    if (tap != null) tap(pro);
-                  },
-                  child: Card(
-                    child: game.Profile(pro.profile, false, {}),
-                    elevation: 1.0,
+          child: Scrollbar(
+            isAlwaysShown: true,
+            controller: _controller,
+            showTrackOnHover: true,
+            child: ListView(
+              scrollDirection: Axis.vertical,
+              controller: _controller,
+              children: <Widget>[
+                for (var pro in list)
+                  GestureDetector(
+                    onTap: () {
+                      if (tap != null) tap(pro);
+                    },
+                    child: Card(
+                      child: game.Profile(pro.profile, false, {}),
+                      elevation: 1.0,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
