@@ -52,20 +52,15 @@ class Credentials {
 class Invite {
   // it's a variable cause it's easier to test
   static const expiry = Duration(seconds: 30);
-  final String id;
-  // optional parameters
-  String platform;
-  Profile profile;
+  final Profile profile;
 
-  Invite(this.id);
+  const Invite(this.profile);
 
   Invite.fromJson(Map<String, dynamic> json)
-      : id = json["id"],
-        profile = Profile.fromJson(json["profile"]);
+      : profile = Profile.fromJson(json["profile"]);
 
-  Map<String, String> toJson() => {
-        "id": id,
-        "platform": platform,
+  Map<String, dynamic> toJson() => {
+        "profile": profile.toJson(),
       };
 }
 

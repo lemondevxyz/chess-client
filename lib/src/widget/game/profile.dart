@@ -2,7 +2,7 @@ import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/model/model.dart' as model;
 import 'package:flutter/material.dart';
 
-class _ProfileIcon extends StatelessWidget {
+class _ProfilePiece extends StatelessWidget {
   final IconData icon;
   final int amount;
   final Color clr;
@@ -19,7 +19,7 @@ class _ProfileIcon extends StatelessWidget {
     "Eight"
   ];
 
-  const _ProfileIcon(this.icon, this.amount, this.clr);
+  const _ProfilePiece(this.icon, this.amount, this.clr);
 
   @override
   build(BuildContext context) {
@@ -80,7 +80,7 @@ class Profile extends StatelessWidget {
           children: <Widget>[
             if (deadPieces != null)
               for (int index in deadPieces.keys)
-                _ProfileIcon(PieceKind.getIcon(index), deadPieces[index], clr),
+                _ProfilePiece(PieceKind.getIcon(index), deadPieces[index], clr),
           ],
         ),
       ),

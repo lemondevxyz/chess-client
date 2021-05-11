@@ -21,8 +21,9 @@ class _WatchableState extends State<Watchable> {
     double sz = MediaQuery.of(context).size.shortestSide / 1.5;
     sz = sz > 400 ? sz : 400;
 
+    final _controller = ScrollController();
+
     return Container(
-      padding: EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,12 +51,15 @@ class _WatchableState extends State<Watchable> {
             child: Text("Choose a game to spectate", textAlign: TextAlign.left),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SizedBox(
-                height: sz,
+            child: SizedBox(
+              height: sz,
+              child: Scrollbar(
+                isAlwaysShown: true,
+                controller: _controller,
+                showTrackOnHover: true,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
+                  controller: _controller,
                   children: <Widget>[
                     for (var id in widget.set.keys)
                       Container(

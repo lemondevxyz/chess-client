@@ -536,6 +536,7 @@ class Server implements ServerService {
   void _inviteReceiver(order.Invite i) {
     _invites.add(i);
 
+    print("notify");
     _notify(order.OrderID.Invite, null);
 
     _inviteTimers.add(Timer(order.Invite.expiry, () {
