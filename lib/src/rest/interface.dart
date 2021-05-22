@@ -4,6 +4,7 @@ import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
 import 'package:chess_client/src/model/order.dart' as order;
 import 'package:chess_client/src/model/model.dart' as model;
+import 'package:chess_client/src/rest/conf.dart' as rest;
 
 abstract class ServerService
     implements
@@ -15,6 +16,7 @@ abstract class ServerService
         GameService,
         HubService {}
 
+// widget/game.dart
 abstract class GameService
     implements WebsocketService, SubscribeService, BoardService {}
 
@@ -78,8 +80,13 @@ abstract class SubscribeService {
 
 abstract class WebsocketService {
   model.Profile get playerprofile;
+  rest.ServerConf get conf;
 
   Future<void> connect();
   Future<void> disconnect();
+  Future<void> refreshPlatforms();
+
+  List<String> get platforms;
+
   bool isConnected();
 }

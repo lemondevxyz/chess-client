@@ -256,6 +256,7 @@ class _BoardGraphics extends CustomPainter {
           final icon = PieceKind.getIcon(pec.kind);
           final clr = !pec.p1 ? Colors.black : Colors.white;
           final shadowclr = !pec.p1 ? Colors.white : Colors.black;
+
           if (icon != null) {
             final builder = ui.ParagraphBuilder(
               ui.ParagraphStyle(
@@ -268,6 +269,7 @@ class _BoardGraphics extends CustomPainter {
               color: clr,
               fontSize: sz,
               fontFamily: icon.fontFamily,
+              background: Paint()..color = clr,
               shadows: <Shadow>[
                 Shadow(
                   color: shadowclr,

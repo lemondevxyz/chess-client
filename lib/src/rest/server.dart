@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:isolate';
 
 import 'package:chess_client/src/board/board.dart';
 import 'package:chess_client/src/board/piece.dart';
@@ -16,6 +15,64 @@ import "package:websocket/websocket.dart";
 // Server is a definition of the server we communicate with.
 class Server implements ServerService {
   final ServerConf conf;
+
+  // platforms
+  final platforms = <String>[];
+
+  Future<void> refreshPlatform(String platform) async {
+    final com = Completer<void>();
+
+    http.get(conf.http(platform + "/private")).then((http.Response r) {
+      if (r.statusCode == 404) {
+        com.completeError("404 on $platform");
+      } else {
+        com.complete();
+      }
+    }).catchError((e) {
+      com.completeError(e);
+    });
+
+    return com.future;
+  }
+
+  Future<void> refreshPlatforms() async {
+    final c = Completer<void>();
+
+    platforms.clear();
+
+    refreshPlatform("discord")
+        .then((_) => platforms.add("discord"))
+        .whenComplete(() {
+      refreshPlatform("google")
+          .then((_) => platforms.add("google"))
+          .whenComplete(() {
+        refreshPlatform("github")
+            .then((_) => platforms.add("github"))
+            .whenComplete(() {
+          c.complete();
+        }).catchError((_) {});
+      }).catchError((_) {});
+    }).catchError((_) {});
+
+    return c.future;
+  }
+
+  // isLoggedIn sends a request a private route, to check if the user is logged in or not.
+  Future<bool> isLoggedIn() {
+    final c = Completer<bool>();
+
+    final String url = conf.http(Server.routes["private"]);
+    http.get(url, headers: _headers).then((http.Response r) {
+      if (r.statusCode == 200)
+        c.complete(true);
+      else
+        c.complete(false);
+    }).catchError((e) {
+      c.completeError("offline");
+    });
+
+    return c.future;
+  }
 
   // InviteService
   final _invites = List<order.Invite>.empty(growable: true);
@@ -174,6 +231,8 @@ class Server implements ServerService {
   Board get board => inGame ? _game.brd : null;
 
   Future<HashMap<String, Point>> possib(int id) async {
+    if (!inGame) return Future.error("you have to be in game");
+
     final c = Completer<HashMap<String, Point>>();
     _postRequest(Server.routes["possib"], jsonEncode(model.Possible(id, null)))
         .then((body) {
@@ -297,138 +356,148 @@ class Server implements ServerService {
 
     final c = Completer<void>();
 
-    WebSocket.connect(conf.ws(Server.routes["ws"])).then((ws) {
-      c.complete();
+    isLoggedIn().then((bool b) {
+      if (!b) {
+        print("yoo no authorized");
+        c.completeError("unauthorized");
+      } else {
+        WebSocket.connect(conf.ws(Server.routes["ws"])).then((ws) {
+          c.complete();
 
-      _socket = ws;
+          _socket = ws;
 
-      ws.stream.listen((data) {
-        final map = jsonDecode(data);
-        if (map is Map<String, dynamic>) {
-          final o = order.Order.fromJson(map);
-          switch (o.id) {
-            case order.OrderID.Credentials:
-              try {
-                final cred = order.Credentials.fromJson(o.obj);
+          ws.stream.listen((data) {
+            final map = jsonDecode(data);
+            if (map is Map<String, dynamic>) {
+              final o = order.Order.fromJson(map);
+              switch (o.id) {
+                case order.OrderID.Credentials:
+                  try {
+                    final cred = order.Credentials.fromJson(o.obj);
 
-                _credentials = cred;
-                _headers["Authorization"] = "Bearer ${cred.token}";
-              } catch (e) {
-                print("listen.credentials: $e");
+                    _credentials = cred;
+                    _headers["Authorization"] = "Bearer ${cred.token}";
+                  } catch (e) {
+                    print("listen.credentials: $e");
+                  }
+                  break;
+                case order.OrderID.Invite:
+                  try {
+                    final inv = order.Invite.fromJson(o.obj);
+                    _inviteReceiver(inv);
+                  } catch (e) {
+                    print("listen.invite: $e");
+                  }
+                  break;
+                case order.OrderID.Move:
+                  try {
+                    final move = order.Move.fromJson(o.obj);
+
+                    board.set(move.id, move.dst);
+                  } catch (e) {
+                    print("listen.move: $e");
+                  }
+                  break;
+                case order.OrderID.Promote:
+                  try {
+                    final promote = order.Promote.fromJson(o.obj);
+
+                    _notify(order.OrderID.Promote, promote);
+                  } catch (e) {
+                    print("listen.promote: $e");
+                  }
+                  break;
+                case order.OrderID.Promotion:
+                  try {
+                    final promotion = order.Promotion.fromJson(o.obj);
+
+                    board.setKind(promotion.id, promotion.kind);
+                  } catch (e) {
+                    print("listen.promotion: $e");
+                  }
+                  break;
+                case order.OrderID.Castling:
+                  // trust server data
+                  try {
+                    final move = order.Castling.fromJson(o.obj);
+
+                    final king = board.getByIndex(move.src);
+                    final rook = board.getByIndex(move.dst);
+
+                    if (king.kind != PieceKind.king)
+                      throw "bad type. should be king, instead got ${king.kind}";
+                    else if (rook.kind != PieceKind.rook)
+                      throw "bad type. should be rook, instead got ${rook.kind}";
+
+                    int rookx;
+                    int kingx;
+                    if (rook.pos.x == 0) {
+                      rookx = 3;
+                      kingx = 2;
+                    } else if (rook.pos.x == 7) {
+                      rookx = 5;
+                      kingx = 6;
+                    }
+
+                    board.set(move.src, Point(kingx, king.pos.y));
+                    board.set(move.dst, Point(rookx, rook.pos.y));
+                  } catch (e) {
+                    print("listen.castling: $e");
+                  }
+                  break;
+                case order.OrderID.Turn:
+                  try {
+                    final turn = order.Turn.fromJson(o.obj);
+
+                    _playerTurn = turn.p1;
+                    _notify(order.OrderID.Turn, turn);
+                  } catch (e) {
+                    print("listen.turn: $e");
+                  }
+                  break;
+                case order.OrderID.Checkmate:
+                  try {
+                    final checkmate = order.Turn.fromJson(o.obj);
+
+                    _notify(order.OrderID.Checkmate, checkmate);
+                  } catch (e) {
+                    print("listen.checkmate: $e");
+                  }
+                  break;
+                case order.OrderID.Game:
+                  try {
+                    final g = order.Game.fromJson(o.obj);
+                    _gameReceiver(g);
+                  } catch (e) {
+                    print("listen.game: $e");
+                  }
+                  break;
+                case order.OrderID.Done:
+                  try {
+                    final d = order.Done.fromJson(o.obj);
+                    _doneReceiver(d);
+                  } catch (e) {
+                    print("listen.done: $e");
+                  }
+                  break;
               }
-              break;
-            case order.OrderID.Invite:
-              try {
-                final inv = order.Invite.fromJson(o.obj);
-                _inviteReceiver(inv);
-              } catch (e) {
-                print("listen.invite: $e");
-              }
-              break;
-            case order.OrderID.Move:
-              try {
-                final move = order.Move.fromJson(o.obj);
+            }
+          });
 
-                board.set(move.id, move.dst);
-              } catch (e) {
-                print("listen.move: $e");
-              }
-              break;
-            case order.OrderID.Promote:
-              try {
-                final promote = order.Promote.fromJson(o.obj);
+          ws.done.then((_) {
+            //print("websocket done ${ws.closeCode}, ${ws.closeReason}");
+            try {
+              _notify(order.OrderID.Disconnect, null);
+            } catch (e) {}
+            _clean();
+          });
 
-                _notify(order.OrderID.Promote, promote);
-              } catch (e) {
-                print("listen.promote: $e");
-              }
-              break;
-            case order.OrderID.Promotion:
-              try {
-                final promotion = order.Promotion.fromJson(o.obj);
-
-                board.setKind(promotion.id, promotion.kind);
-              } catch (e) {
-                print("listen.promotion: $e");
-              }
-              break;
-            case order.OrderID.Castling:
-              // trust server data
-              try {
-                final move = order.Castling.fromJson(o.obj);
-
-                final king = board.getByIndex(move.src);
-                final rook = board.getByIndex(move.dst);
-
-                if (king.kind != PieceKind.king)
-                  throw "bad type. should be king, instead got ${king.kind}";
-                else if (rook.kind != PieceKind.rook)
-                  throw "bad type. should be rook, instead got ${rook.kind}";
-
-                int rookx;
-                int kingx;
-                if (rook.pos.x == 0) {
-                  rookx = 3;
-                  kingx = 2;
-                } else if (rook.pos.x == 7) {
-                  rookx = 5;
-                  kingx = 6;
-                }
-
-                board.set(move.src, Point(kingx, king.pos.y));
-                board.set(move.dst, Point(rookx, rook.pos.y));
-              } catch (e) {
-                print("listen.castling: $e");
-              }
-              break;
-            case order.OrderID.Turn:
-              try {
-                final turn = order.Turn.fromJson(o.obj);
-
-                _playerTurn = turn.p1;
-                _notify(order.OrderID.Turn, turn);
-              } catch (e) {
-                print("listen.turn: $e");
-              }
-              break;
-            case order.OrderID.Checkmate:
-              try {
-                final checkmate = order.Turn.fromJson(o.obj);
-
-                _notify(order.OrderID.Checkmate, checkmate);
-              } catch (e) {
-                print("listen.checkmate: $e");
-              }
-              break;
-            case order.OrderID.Game:
-              try {
-                final g = order.Game.fromJson(o.obj);
-                _gameReceiver(g);
-              } catch (e) {
-                print("listen.game: $e");
-              }
-              break;
-            case order.OrderID.Done:
-              try {
-                final d = order.Done.fromJson(o.obj);
-                _doneReceiver(d);
-              } catch (e) {
-                print("listen.done: $e");
-              }
-          }
-        }
-      });
-
-      ws.done.then((_) {
-        //print("websocket done ${ws.closeCode}, ${ws.closeReason}");
-        _notify(order.OrderID.Disconnect, null);
-        _clean();
-      });
-
-      try {
-        _notify(order.OrderID.Credentials, null);
-      } catch (e) {
-        c.completeError(e);
+          try {
+            _notify(order.OrderID.Credentials, null);
+          } catch (e) {}
+        }).catchError((e) {
+          c.completeError(e);
+        });
       }
     }).catchError((e) {
       c.completeError(e);
@@ -440,7 +509,7 @@ class Server implements ServerService {
   // internal
   static const reconnectDuration = Duration(seconds: 30);
   static const routes = {
-    // where to send cmd requests
+    // where to send cmd requests, only works in game
     "cmd": "cmd",
     // where to send invite request
     "invite": "invite",
@@ -449,16 +518,16 @@ class Server implements ServerService {
     // where to upgrade http connection to websocket
     "ws": "ws",
     // where to send requests to test authorization.
-    "protect": "protect",
-    // where to get users that want to play
+    "private": "private",
+    // where to get users that are not in game
     "avali": "avali",
-    // where to get avaliable moves
+    // where to get avaliable moves(only in game)
     "possib": "possib",
     // where to get watchable games
     "watchable/list": "watchable/list",
     // where to join watchable games
     "watchable/join": "watchable/join",
-    // where to leave current watchable game
+    // where to a watchable game(only works when spectacting)
     "watchable/leave": "watchable/leave",
   };
 
@@ -479,11 +548,9 @@ class Server implements ServerService {
       if (r.statusCode != 200) {
         c.completeError("${r.body}");
       } else {
-        //print("get statuscode ${r.body}");
         c.complete(r.body);
       }
     }).catchError((e) {
-      // print("get $e");
       c.completeError(e);
     });
 
@@ -516,6 +583,8 @@ class Server implements ServerService {
   }
 
   Future<void> _sendCommand(order.Order cmd) async {
+    if (!inGame) return Future.error("you must be in game");
+
     String json = "";
     try {
       json = jsonEncode(cmd);
@@ -536,7 +605,6 @@ class Server implements ServerService {
   void _inviteReceiver(order.Invite i) {
     _invites.add(i);
 
-    print("notify");
     _notify(order.OrderID.Invite, null);
 
     _inviteTimers.add(Timer(order.Invite.expiry, () {

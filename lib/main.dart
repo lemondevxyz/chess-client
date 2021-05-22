@@ -2,19 +2,21 @@ import 'package:chess_client/src/model/order.dart' as order;
 import 'package:flutter/material.dart';
 import 'package:chess_client/src/widget/game.dart' as widget;
 import 'package:chess_client/src/widget/hub.dart' as widget;
+import 'package:chess_client/src/widget/offline.dart' as widget;
 import 'package:chess_client/src/rest/server.dart' as rest;
 import 'package:chess_client/src/rest/conf.dart' as rest;
 
-class Debugging {
-  static const none = 0;
-  static const hub = 1;
-  static const game = 2;
-  static const boardwidget = 3;
+enum Debugging {
+  none,
+  offline,
+  hub,
+  game,
+  boardwidget,
 }
 
 rest.Server server = rest.Server(
     rest.ServerConf(false, "localhost", Duration(seconds: 0), port: 8080));
-const debug = Debugging.hub;
+const debug = Debugging.none;
 
 void main() {
   runApp(App());
@@ -52,26 +54,9 @@ class _AppState extends State<App> {
   void goToOffline() {
     if (_navigator != null && _navigator.currentState != null)
       _navigator.currentState.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (BuildContext ctx) => OfflineRoute()),
+          MaterialPageRoute(
+              builder: (BuildContext ctx) => widget.OfflineRoute(server)),
           (_) => false);
-  }
-
-  @override
-  dispose() {
-    super.dispose();
-  }
-
-  @override
-  initState() {
-    switch (debug) {
-      case Debugging.none:
-        server.connect();
-        break;
-      case Debugging.game:
-        goToGame();
-    }
-
-    super.initState();
   }
 
   _AppState() {
@@ -115,32 +100,11 @@ class _AppState extends State<App> {
               return widget.GameRoute(null, goToHub, _navigator, testing: true);
           }
 
-          return OfflineRoute();
+          return widget.OfflineRoute(server,
+              testing: debug == Debugging.offline, navigator: _navigator);
         });
       },
       navigatorKey: _navigator,
-    );
-  }
-}
-
-class OfflineRoute extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    //tryConnect();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Offline"),
-        automaticallyImplyLeading: false,
-      ),
-      body: Center(
-        child: TextButton(
-          child: Text("Connect"),
-          onPressed: () {
-            server.connect();
-          },
-        ),
-      ),
     );
   }
 }

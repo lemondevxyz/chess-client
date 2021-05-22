@@ -28,13 +28,19 @@ class GameRoute extends StatefulWidget {
 
 class _GameState extends State<GameRoute> {
   bool get isOurTurn {
-    if (widget.service.p1 != null)
+    if (!widget.testing) if (widget.service.p1 != null)
       return widget.service.p1 == widget.service.playerTurn;
+
+    return false;
+  }
+
+  bool get spectating {
+    if (!widget.testing)
+      return widget.service.p1 == null;
     else
       return false;
   }
 
-  bool get spectating => widget.service.p1 == null;
   bool isReverse = false;
   bool isFinished = false;
 
@@ -84,20 +90,24 @@ class _GameState extends State<GameRoute> {
 
   @override
   initState() {
-    widget.service.subscribe(order.OrderID.Promote, onPromote);
-    widget.service.subscribe(order.OrderID.Turn, onTurn);
-    widget.service.subscribe(order.OrderID.Done, onDone);
+    if (!widget.testing) {
+      widget.service.subscribe(order.OrderID.Promote, onPromote);
+      widget.service.subscribe(order.OrderID.Turn, onTurn);
+      widget.service.subscribe(order.OrderID.Done, onDone);
 
-    if (widget.service.p1 != null) isReverse = !widget.service.p1;
+      if (widget.service.p1 != null) isReverse = !widget.service.p1;
+    }
 
     super.initState();
   }
 
   @override
   dispose() {
-    widget.service.unsubscribe(order.OrderID.Promote);
-    widget.service.unsubscribe(order.OrderID.Turn);
-    widget.service.unsubscribe(order.OrderID.Done);
+    if (!widget.testing) {
+      widget.service.unsubscribe(order.OrderID.Promote);
+      widget.service.unsubscribe(order.OrderID.Turn);
+      widget.service.unsubscribe(order.OrderID.Done);
+    }
 
     super.dispose();
   }
