@@ -6,9 +6,9 @@ import 'package:chess_client/src/widget/game/board.dart' as game;
 import 'package:chess_client/src/widget/game/clickable.dart' as game;
 import 'package:chess_client/src/widget/game/controls.dart' as game;
 import 'package:chess_client/src/widget/game/profile.dart' as game;
+import 'package:chess_client/src/widget/game/promotion.dart' as game;
 
 import 'package:chess_client/icons.dart' as icons;
-import 'package:chess_client/src/widget/game/promotion.dart';
 import 'package:flutter/material.dart';
 
 class GameRoute extends StatefulWidget {
@@ -43,6 +43,7 @@ class _GameState extends State<GameRoute> {
 
   bool isReverse = false;
   bool isFinished = false;
+  bool get p1 => widget.testing ? true : widget.service.p1;
 
   Key redrawControls;
 
@@ -61,12 +62,15 @@ class _GameState extends State<GameRoute> {
             title: Text("Promote your piece"),
             content: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Promotion(widget.service.p1, (int kind) {
-                widget.service.promote(promote.id, kind).then((_) {
+              child: game.Promotion(p1, (int kind) {
+                if (!widget.testing)
+                  widget.service.promote(promote.id, kind).then((_) {
+                    Navigator.of(context).pop();
+                  }).catchError((e) {
+                    print("promote: $e");
+                  });
+                else
                   Navigator.of(context).pop();
-                }).catchError((e) {
-                  print("promote: $e");
-                });
               }),
             ),
           );
@@ -245,6 +249,16 @@ class _GameState extends State<GameRoute> {
                     ),
                     p2,
                     cntrls,
+                    if (widget.testing)
+                      TextButton(
+                        child: Text("promote dialog"),
+                        onPressed: () {
+                          onPromote(order.Promote(
+                            1,
+                            0,
+                          ));
+                        },
+                      ),
                   ],
                 );
               } else {
@@ -270,6 +284,23 @@ class _GameState extends State<GameRoute> {
                         ),
                       ),
                     ),
+                    if (widget.testing)
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          children: <Widget>[
+                            TextButton(
+                              child: Text("promote dialog"),
+                              onPressed: () {
+                                onPromote(order.Promote(
+                                  1,
+                                  0,
+                                ));
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 );
               }

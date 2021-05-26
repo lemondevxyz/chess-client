@@ -5,7 +5,7 @@ class Promotion extends StatelessWidget {
   final Function(int) promoteCallback;
   final bool p1;
 
-  static double shadowblur = 2.0;
+  static double shadowblur = 0.1;
   static const list = <int>[
     PieceKind.rook,
     PieceKind.bishop,

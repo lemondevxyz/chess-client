@@ -160,8 +160,6 @@ class OfflineRoute extends StatelessWidget {
         child: const Text("Connect"),
         onPressed: () {
           service.connect().catchError((e) {
-            print("$e");
-
             if (e == "offline")
               offlineDialog();
             else if (e == "unauthorized") // do dialog to authorize first

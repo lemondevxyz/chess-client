@@ -301,10 +301,17 @@ class _BoardGraphics extends CustomPainter {
             canvas.save();
 
             // canvas.drawPaint(Paint()..color = shadowclr);
+            /*
             canvas.drawParagraph(
               para,
               Offset(minx + ((0.9 - iconPercentage) * sz),
                   miny + ((0.9 - iconPercentage) * sz)),
+            );
+            */
+            canvas.drawParagraph(
+              para,
+              Offset(minx + (((0.9 - iconPercentage) * sz)),
+                  miny + ((1.05 - iconPercentage) * sz)),
             );
 
             canvas.restore();

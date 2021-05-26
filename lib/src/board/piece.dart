@@ -69,12 +69,12 @@ class PieceKind {
 
   static final Map<int, IconData> icondata = {
     empty: null,
-    pawn: icons.pawn,
-    bishop: icons.bishop,
-    knight: icons.knight,
-    rook: icons.rook,
-    queen: icons.queen,
-    king: icons.king,
+    pawn: icons.pawn_b,
+    bishop: icons.bishop_b,
+    knight: icons.knight_b,
+    rook: icons.rook_b,
+    queen: icons.queen_b,
+    king: icons.king_b,
   };
 
   String toString() {

@@ -358,7 +358,6 @@ class Server implements ServerService {
 
     isLoggedIn().then((bool b) {
       if (!b) {
-        print("yoo no authorized");
         c.completeError("unauthorized");
       } else {
         WebSocket.connect(conf.ws(Server.routes["ws"])).then((ws) {

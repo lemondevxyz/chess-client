@@ -28,21 +28,33 @@ final IconData keyboard_arrow_right =
     IconData(0xe80b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 final IconData restore =
     IconData(0xe80c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-final IconData king =
-    IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-final IconData queen =
-    IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-final IconData knight =
-    IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-final IconData bishop =
-    IconData(0xe804, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-final IconData rook =
-    IconData(0xe805, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-final IconData pawn =
-    IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 final IconData github =
     IconData(0xf09b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 final IconData google =
     IconData(0xf1a0, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 final IconData discord =
     IconData(0xf392, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData bishop_b =
+    IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData bishop_w =
+    IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData knight_w =
+    IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData knight_b =
+    IconData(0xe804, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData pawn_w =
+    IconData(0xe805, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData pawn_b =
+    IconData(0xe80d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData rook_w =
+    IconData(0xe80e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData rook_b =
+    IconData(0xe80f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData queen_w =
+    IconData(0xe810, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData queen_b =
+    IconData(0xe811, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData king_w =
+    IconData(0xe812, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+final IconData king_b =
+    IconData(0xe813, fontFamily: _kFontFam, fontPackage: _kFontPkg);
